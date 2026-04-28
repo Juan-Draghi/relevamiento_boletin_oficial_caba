@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biblioteca CPAU | Relevamiento Boletin Oficial CABA</title>
+  <link rel="icon" href="{{ url_for('static', filename='app-icon-ciudad.ico') }}" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="/">
+        <img src="{{ url_for('static', filename='biblioteca-logo.png') }}" alt="Biblioteca CPAU">
+      </a>
+      <div class="app-badge">Aplicacion local</div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p class="section-kicker">Relevamiento BO CABA</p>
+        <h1>Detector de normativa relevante del Boletin Oficial CABA</h1>
+        <p>
+          Herramienta local para consultar la API oficial, aplicar las reglas
+          de deteccion de Biblioteca CPAU y revisar los resultados antes de
+          incorporarlos al seguimiento normativo.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <article class="analysis-card">
+          <form method="post" class="analysis-form" id="analysis-form">
+            <input id="parametro" name="parametro" type="hidden" value="{{ default_parametro }}">
+
+            <fieldset class="options">
+              <legend>Boletin a analizar</legend>
+              <label class="radio-field">
+                <input type="radio" name="parametro_mode" value="latest" checked>
+                Ultimo ejemplar publicado
+              </label>
+              <label class="radio-field radio-field--stacked">
+                <span>
+                  <input type="radio" name="parametro_mode" value="date">
+                  Fecha especifica
+                </span>
+                <input id="parametro-date" type="date" aria-label="Fecha del boletin">
+              </label>
+              <label class="radio-field radio-field--stacked">
+                <span>
+                  <input type="radio" name="parametro_mode" value="advanced">
+                  Parametro avanzado
+                </span>
+                <input
+                  id="parametro-advanced"
+                  type="text"
+                  placeholder="Ejemplo: 7281 o 12-01-2026"
+                  aria-label="Parametro avanzado"
+                >
+              </label>
+              <p class="hint">Por defecto se usa <strong>0</strong>. Para fechas, la app envia el valor como <strong>dd-mm-aaaa</strong>.</p>
+            </fieldset>
+
+            <fieldset class="options">
+              <legend>Alcance de la tabla</legend>
+              <label class="checkbox-field">
+                <input type="checkbox" name="include_no_relevante">
+                Incluir normas no relevantes
+              </label>
+              <label class="checkbox-field">
+                <input type="checkbox" name="include_descartadas">
+                Incluir descartadas por filtro estructural
+              </label>
+            </fieldset>
+
+            <button type="submit" id="analysis-submit">Analizar boletin</button>
+          </form>
+        </article>
+
+        <aside class="notes-card">
+          <h2>Configuracion activa</h2>
+          {% if config_summary %}
+            <dl class="config-list">
+              <div><dt>Keywords</dt><dd>{{ config_summary.keywords }}</dd></div>
+              <div><dt>Keywords condicionales</dt><dd>{{ config_summary.keywords_condicionales }}</dd></div>
+              <div><dt>Normas curadas</dt><dd>{{ config_summary.normas_curadas }}</dd></div>
+              <div><dt>Organismos prioridad</dt><dd>{{ config_summary.organismos_prioridad }}</dd></div>
+            </dl>
+            <p class="notes-meta">
+              La configuracion se lee desde <code>config/config_keywords.json</code>.
+            </p>
+          {% else %}
+            <p>No se pudo cargar la configuracion.</p>
+          {% endif %}
+        </aside>
+      </section>
+
+      <section class="message message--{{ message_kind }}" id="message-box" {% if not message %}hidden{% endif %}>
+        <span id="message-text">{{ message }}</span>
+      </section>
+
+      <section class="progress-panel" id="progress-panel" hidden>
+        <div class="progress-panel__header">
+          <p class="section-kicker">Progreso</p>
+          <strong id="progress-percent">0%</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar__fill" id="progress-bar-fill"></div>
+        </div>
+        <p class="progress-panel__message" id="progress-message">Preparando analisis...</p>
+      </section>
+
+      <section class="summary-panel" id="summary-panel" hidden>
+        <div class="results-header">
+          <div>
+            <p class="section-kicker">Sintesis</p>
+            <h2>Resultado del boletin</h2>
+          </div>
+          <span id="boletin-label">BO</span>
+        </div>
+        <div class="metric-grid" id="metric-grid"></div>
+      </section>
+
+      <section class="results" id="results-panel" hidden>
+        <div class="results-header">
+          <div>
+            <p class="section-kicker">Resultados</p>
+            <h2>Normas detectadas</h2>
+          </div>
+          <span id="results-count">0</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th>Norma</th>
+                <th>Organismo</th>
+                <th>Sumario y motivo</th>
+                <th>Links</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="config-editor" id="config-editor">
+        <div class="results-header">
+          <div>
+            <p class="section-kicker">Configuracion</p>
+            <h2>Editar parametros del detector</h2>
+          </div>
+          <span>JSON</span>
+        </div>
+
+        {% if config_editor_values %}
+          <form class="config-form" id="config-form">
+            <div class="config-selector-grid">
+              <div class="field">
+                <label for="config-field-select">Listado a editar</label>
+                <select id="config-field-select">
+                  <option value="KEYWORDS">KEYWORDS</option>
+                  <option value="LISTA_NORMAS_CURADAS">LISTA_NORMAS_CURADAS</option>
+                  <option value="LISTA_ORGANISMOS_PRIORIDAD">LISTA_ORGANISMOS_PRIORIDAD</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="config-list-search">Buscar dentro del listado</label>
+                <input id="config-list-search" type="search" placeholder="Escribi para filtrar entradas...">
+              </div>
+            </div>
+
+            <div class="list-editor-toolbar">
+              <p class="hint" id="config-list-count">0 entradas</p>
+              <button type="button" class="button-secondary" id="add-config-entry">Agregar entrada</button>
+            </div>
+
+            <div class="list-editor" id="config-list-editor"></div>
+
+            <textarea class="hidden-config-source" name="KEYWORDS" data-config-source="KEYWORDS">{{ config_editor_values.KEYWORDS }}</textarea>
+            <textarea class="hidden-config-source" name="LISTA_NORMAS_CURADAS" data-config-source="LISTA_NORMAS_CURADAS">{{ config_editor_values.LISTA_NORMAS_CURADAS }}</textarea>
+            <textarea class="hidden-config-source" name="LISTA_ORGANISMOS_PRIORIDAD" data-config-source="LISTA_ORGANISMOS_PRIORIDAD">{{ config_editor_values.LISTA_ORGANISMOS_PRIORIDAD }}</textarea>
+
+            <div class="config-actions">
+              <p class="hint">Antes de guardar se genera un respaldo. Si una entrada queda vacia, el guardado se bloquea para evitar borrados accidentales.</p>
+              <button type="submit" id="config-submit">Guardar configuracion</button>
+            </div>
+          </form>
+        {% else %}
+          <div class="config-form">
+            <p>No se pudo cargar el editor porque la configuracion tiene errores.</p>
+          </div>
+        {% endif %}
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>Biblioteca CPAU</span>
+      <span>Herramienta local de relevamiento del Boletin Oficial CABA</span>
+    </footer>
+  </div>
+
+  <script>
+    const analysisForm = document.getElementById("analysis-form");
+    const submitButton = document.getElementById("analysis-submit");
+    const parametroInput = document.getElementById("parametro");
+    const parametroDate = document.getElementById("parametro-date");
+    const parametroAdvanced = document.getElementById("parametro-advanced");
+    const configForm = document.getElementById("config-form");
+    const configSubmit = document.getElementById("config-submit");
+    const configFieldSelect = document.getElementById("config-field-select");
+    const configListSearch = document.getElementById("config-list-search");
+    const configListEditor = document.getElementById("config-list-editor");
+    const configListCount = document.getElementById("config-list-count");
+    const addConfigEntry = document.getElementById("add-config-entry");
+    const progressPanel = document.getElementById("progress-panel");
+    const progressBarFill = document.getElementById("progress-bar-fill");
+    const progressPercent = document.getElementById("progress-percent");
+    const progressMessage = document.getElementById("progress-message");
+    const messageBox = document.getElementById("message-box");
+    const messageText = document.getElementById("message-text");
+    const summaryPanel = document.getElementById("summary-panel");
+    const metricGrid = document.getElementById("metric-grid");
+    const boletinLabel = document.getElementById("boletin-label");
+    const resultsPanel = document.getElementById("results-panel");
+    const resultsCount = document.getElementById("results-count");
+    const resultsBody = document.getElementById("results-body");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function setMessage(text, kind) {
+      messageText.textContent = text;
+      messageBox.hidden = false;
+      messageBox.className = `message message--${kind}`;
+    }
+
+    function getSelectedParametroMode() {
+      const selected = document.querySelector('input[name="parametro_mode"]:checked');
+      return selected ? selected.value : "latest";
+    }
+
+    function formatApiDate(value) {
+      const [year, month, day] = value.split("-");
+      return `${day}-${month}-${year}`;
+    }
+
+    function resolveParametro() {
+      const mode = getSelectedParametroMode();
+      if (mode === "latest") {
+        return "0";
+      }
+      if (mode === "date") {
+        if (!parametroDate.value) {
+          throw new Error("Selecciona una fecha para consultar un boletin retrospectivo.");
+        }
+        return formatApiDate(parametroDate.value);
+      }
+      const value = parametroAdvanced.value.trim();
+      if (!value) {
+        throw new Error("Ingresa un numero de boletin o parametro admitido por la API.");
+      }
+      return value;
+    }
+
+    function splitConfigList(rawValue) {
+      return rawValue
+        .split("\n")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+    }
+
+    function getConfigEditorData() {
+      const data = {};
+      document.querySelectorAll("[data-config-source]").forEach((source) => {
+        data[source.dataset.configSource] = splitConfigList(source.value);
+      });
+      return data;
+    }
+
+    const configEditorData = getConfigEditorData();
+
+    function renderConfigList() {
+      if (!configFieldSelect || !configListEditor) {
+        return;
+      }
+      const selectedField = configFieldSelect.value;
+      const values = configEditorData[selectedField] || [];
+      const query = (configListSearch.value || "").trim().toLocaleLowerCase("es");
+      const matches = values
+        .map((value, index) => ({ value, index }))
+        .filter((item) => !query || item.value.toLocaleLowerCase("es").includes(query));
+
+      configListCount.textContent = `${matches.length} de ${values.length} entradas`;
+      configListEditor.innerHTML = matches.length
+        ? matches.map((item) => `
+            <label class="list-editor-row">
+              <span>${item.index + 1}</span>
+              <input type="text" value="${escapeHtml(item.value)}" data-config-index="${item.index}">
+            </label>
+          `).join("")
+        : `<div class="empty-state">No hay coincidencias para la busqueda actual.</div>`;
+    }
+
+    function updateHiddenConfigSources() {
+      document.querySelectorAll("[data-config-source]").forEach((source) => {
+        source.value = (configEditorData[source.dataset.configSource] || []).join("\n");
+      });
+    }
+
+    function validateConfigEditorData() {
+      for (const [fieldName, values] of Object.entries(configEditorData)) {
+        if (!values.length) {
+          throw new Error(`${fieldName} no puede quedar vacio.`);
+        }
+        const emptyIndex = values.findIndex((value) => !value.trim());
+        if (emptyIndex >= 0) {
+          throw new Error(`${fieldName} tiene una entrada vacia en la posicion ${emptyIndex + 1}. Completala antes de guardar.`);
+        }
+      }
+    }
+
+    function setupConfigListEditor() {
+      if (!configForm) {
+        return;
+      }
+      renderConfigList();
+      configFieldSelect.addEventListener("change", () => {
+        configListSearch.value = "";
+        renderConfigList();
+      });
+      configListSearch.addEventListener("input", renderConfigList);
+      configListEditor.addEventListener("input", (event) => {
+        if (!event.target.matches("[data-config-index]")) {
+          return;
+        }
+        const selectedField = configFieldSelect.value;
+        const index = Number(event.target.dataset.configIndex);
+        configEditorData[selectedField][index] = event.target.value;
+        updateHiddenConfigSources();
+      });
+      addConfigEntry.addEventListener("click", () => {
+        const selectedField = configFieldSelect.value;
+        configEditorData[selectedField].push("");
+        configListSearch.value = "";
+        updateHiddenConfigSources();
+        renderConfigList();
+        const inputs = configListEditor.querySelectorAll("[data-config-index]");
+        const lastInput = inputs[inputs.length - 1];
+        if (lastInput) {
+          lastInput.focus();
+        }
+      });
+    }
+
+    function updateProgress(job) {
+      progressPanel.hidden = false;
+      progressBarFill.style.width = `${job.progress_percent || 0}%`;
+      progressPercent.textContent = `${job.progress_percent || 0}%`;
+      progressMessage.textContent = job.message || "Procesando...";
+    }
+
+    function clearPanels() {
+      resultsBody.innerHTML = "";
+      resultsCount.textContent = "0";
+      resultsPanel.hidden = true;
+      summaryPanel.hidden = true;
+    }
+
+    function renderSummary(summary) {
+      if (!summary || Object.keys(summary).length === 0) {
+        summaryPanel.hidden = true;
+        return;
+      }
+
+      const numero = summary.numero_boletin || "";
+      const fecha = summary.fecha_publicacion || "";
+      boletinLabel.textContent = numero ? `BO ${escapeHtml(numero)}` : "BO";
+      metricGrid.innerHTML = [
+        ["Fecha", fecha || "-"],
+        ["Normas procesadas", summary.total_normas ?? 0],
+        ["Relevantes", summary.relevantes ?? 0],
+        ["Revision manual", summary.revision_manual ?? 0],
+        ["No relevantes", summary.no_relevantes ?? 0],
+        ["Descartadas", summary.descartadas ?? 0],
+      ].map(([label, value]) => `
+        <article class="metric-card">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </article>
+      `).join("");
+      summaryPanel.hidden = false;
+    }
+
+    function renderResults(results) {
+      if (!results || results.length === 0) {
+        resultsBody.innerHTML = "";
+        resultsCount.textContent = "0";
+        resultsPanel.hidden = false;
+        resultsBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="empty-state">No hay resultados para el alcance seleccionado.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      resultsBody.innerHTML = results.map((result) => {
+        const anexos = (result.anexos || []).map((anexo) => `
+          <a href="${escapeHtml(anexo.url)}" target="_blank" rel="noopener">${escapeHtml(anexo.nombre_anexo || "Anexo")}</a>
+        `).join("");
+        const links = [
+          result.url_norma ? `<a href="${escapeHtml(result.url_norma)}" target="_blank" rel="noopener">Texto oficial</a>` : "",
+          anexos,
+        ].filter(Boolean).join("<br>");
+
+        return `
+          <tr>
+            <td><span class="category-badge category-${escapeHtml(result.categoria_salida)}">${escapeHtml(result.categoria_label)}</span></td>
+            <td>
+              <strong>${escapeHtml(result.nombre)}</strong>
+              <small>${escapeHtml(result.poder)} / ${escapeHtml(result.tipo_norma)}</small>
+            </td>
+            <td>${escapeHtml(result.organismo)}</td>
+            <td>
+              <p class="sumario">${escapeHtml(result.sumario)}</p>
+              <p class="motivo">${escapeHtml(result.motivo_label || "Sin motivo informado")}</p>
+            </td>
+            <td class="links-cell">${links || "<span>Sin link</span>"}</td>
+          </tr>
+        `;
+      }).join("");
+
+      resultsCount.textContent = String(results.length);
+      resultsPanel.hidden = false;
+    }
+
+    async function pollJob(jobId) {
+      while (true) {
+        const response = await fetch(`/api/analyze/${jobId}`);
+        const job = await response.json();
+        updateProgress(job);
+
+        if (job.status === "completed") {
+          renderSummary(job.summary || {});
+          renderResults(job.results || []);
+          setMessage(job.message || "Analisis finalizado.", "success");
+          progressPanel.hidden = true;
+          submitButton.disabled = false;
+          return;
+        }
+
+        if (job.status === "error") {
+          clearPanels();
+          setMessage(job.message || "El analisis fallo.", "error");
+          progressPanel.hidden = true;
+          submitButton.disabled = false;
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      }
+    }
+
+    analysisForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      submitButton.disabled = true;
+      clearPanels();
+      setMessage("Iniciando analisis...", "info");
+      updateProgress({ progress_percent: 2, message: "Preparando analisis..." });
+
+      try {
+        parametroInput.value = resolveParametro();
+        const formData = new FormData(analysisForm);
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.job_id) {
+          throw new Error(payload.message || "No se pudo iniciar el analisis.");
+        }
+
+        await pollJob(payload.job_id);
+      } catch (error) {
+        progressPanel.hidden = true;
+        submitButton.disabled = false;
+        clearPanels();
+        setMessage(error.message || "No se pudo iniciar el analisis.", "error");
+      }
+    });
+
+    if (configForm) {
+      setupConfigListEditor();
+      configForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        configSubmit.disabled = true;
+        setMessage("Guardando configuracion...", "info");
+
+        try {
+          validateConfigEditorData();
+          updateHiddenConfigSources();
+          const response = await fetch("/api/config", {
+            method: "POST",
+            body: new FormData(configForm),
+          });
+          const payload = await response.json();
+
+          if (!response.ok || payload.status !== "ok") {
+            throw new Error(payload.message || "No se pudo guardar la configuracion.");
+          }
+
+          const counts = payload.counts || {};
+          setMessage(
+            `${payload.message} KEYWORDS: ${counts.KEYWORDS}; normas curadas: ${counts.LISTA_NORMAS_CURADAS}; organismos: ${counts.LISTA_ORGANISMOS_PRIORIDAD}.`,
+            "success",
+          );
+        } catch (error) {
+          setMessage(error.message || "No se pudo guardar la configuracion.", "error");
+        } finally {
+          configSubmit.disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

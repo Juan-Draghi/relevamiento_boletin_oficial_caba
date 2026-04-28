@@ -1,0 +1,125 @@
+API Boletín Oficial GCBA (CABA) — resumen técnico para prompt / diseño de detector
+Fecha: 2026-01-12 (America/Argentina/Buenos_Aires)
+
+BASE / DOCUMENTACIÓN
+- Base URL (requests): https://api-restboletinoficial.buenosaires.gob.ar
+- Documentación interactiva (auto-generada): https://api-restboletinoficial.buenosaires.gob.ar/api/doc/
+
+CONCEPTOS CLAVE (para consumir como “cliente”)
+- El flujo típico es:
+  1) Obtener el último boletín (o por fecha / número).
+  2) Listar secciones del boletín (supersecciones).
+  3) Traer el detalle de normas por sección.
+  4) Filtrar por “poder” (Legislativo/Ejecutivo), tipo de norma, organismo, y keywords en “sumario”.
+  5) Devolver metadata + links (norma y anexos).
+
+ENDPOINTS PRINCIPALES
+
+1) GET /obtenerBoletin/{parametro}/{carga_datos}
+- Propósito: obtener información del boletín.
+- Parámetros:
+  - parametro: 0 (último boletín), o número de boletín, o fecha en formato dd-mm-yyyy.
+  - carga_datos: boolean (opcional). Si true: incluye secciones del boletín y normas de la primera sección encontrada.
+- Ejemplos:
+  - /obtenerBoletin/0/false            (último boletín, sin cargar secciones/normas)
+  - /obtenerBoletin/7281/false         (por número)
+  - /obtenerBoletin/12-01-2026/false   (por fecha)
+- Campos típicos (cuando carga_datos=false):
+  - fecha_publicacion, dia, mes, anio
+  - numero, numero2
+  - nombre
+  - url_boletin (PDF del boletín)
+  - separata
+
+2) GET /obtenerSeccionesBoletin/{parametro}
+- Propósito: listar secciones/supersecciones asociadas a un boletín (y documentos asociados).
+- Parámetro:
+  - parametro: número de boletín o fecha dd-mm-yyyy.
+- Respuesta: lista de objetos tipo:
+  - superseccion_id (id de sección; clave para obtenerNormasSeccion)
+  - nombre, descripcion
+  - numero_boletin
+  - nombre_documento
+  - url_documento (link de descarga asociado a la sección)
+
+3) POST /obtenerNormasSeccion
+- Propósito: devuelve el detalle de todas las normas de una sección (supersección) en un boletín.
+- Parámetros requeridos (numéricos):
+  - nro_boletin
+  - superseccion_id
+- Importante (práctico): este POST funciona como “Form Data” (x-www-form-urlencoded).
+  - En requests: usar `data={...}` (no `json={...}`).
+- Respuesta (estructura observada):
+  - data["normas"] = diccionario anidado por:
+      Poder  -> Tipo -> Organismo -> [lista de normas]
+    Ej: "Poder Ejecutivo" -> "Decreto" -> "Jefatura de Gabinete ..." -> [ ... ]
+- Campos típicos de cada norma (observado):
+  - nombre (ej. "Decreto N° 8")
+  - sumario
+  - id_norma
+  - url_norma (link directo de descarga; suele ser /download/<id_documento>)
+  - anexos: lista (puede estar vacía)
+      - cada anexo suele incluir:
+        - nombre_anexo (ej. "...-ANX.pdf")
+        - filenet_firmado (link directo /download/<id_documento>)
+  - id_sdin (puede venir vacío)
+
+4) GET /getUrlDocument/{id}/{tipo}
+- Propósito: obtener URL de descarga de documentos.
+- Parámetros:
+  - id: id de la norma (según doc; ej. 298505)
+  - tipo:
+    - 4 => devuelve URL de descarga de la norma
+    - 8 => devuelve URL de descarga del anexo
+
+5) POST /getSdinIds
+- Propósito: mapear id_norma -> id_sdin (si aplica).
+- Parámetro requerido:
+  - ids: string con uno o varios ids numéricos separados por comas (ej. "290138,288250,288246").
+- Respuesta: lista de objetos con:
+  - id_norma
+  - id_sdin
+
+6) GET /obtenerResultado/{parametro}  (búsqueda avanzada)
+- Propósito: ejecutar la búsqueda avanzada del front del BO (útil si querés filtrar “server-side”).
+- Parámetro:
+  - parametro: string con formato “filtro=valor&filtro2=valor2...”, por ejemplo:
+    seccion=3&nBoletin=4576&nNorma=2
+- Filtros soportados (según doc):
+  perPage, offset, superseccion, seccion, tipoNorma, subtipoNorma,
+  reparticiones, nNorma, nBoletin, anio, organismoEmisorSigla,
+  fecha_desde, fecha_hasta, palabras
+- Nota: útil para paginación (perPage/offset) y para búsquedas por “palabras”/fechas/organismo, etc.
+
+7) GET /obtenerFiltrosDeBusqueda
+- Propósito: obtener secciones, subsecciones, tipos y subtipos globales (catálogo de filtros).
+- Uso: para mapear IDs/valores válidos para /obtenerResultado.
+
+8) GET /obtenerOrganismosEmisores
+- Propósito: listar organismos emisores (para filtro organismoEmisorSigla, etc.).
+
+9) GET /obtenerReparticiones
+- Propósito: listar reparticiones (para filtro reparticiones, etc.).
+
+NOTAS DE INTEGRACIÓN (para robustez del pipeline)
+- Validar status_code y content-type antes de parsear JSON.
+- Manejar respuestas no-JSON (HTML/errores) con fallback a r.text y logging.
+- Distinguir:
+  - “url_boletin” (PDF completo del boletín)
+  - “url_documento / url_norma / filenet_firmado” (PDF de sección/norma/anexo; links /download/...)
+- En /obtenerNormasSeccion, la salida viene agrupada; para filtrar conviene aplanar:
+  - por cada norma generar un registro con: poder, tipo, organismo, nombre, sumario, url_norma, anexos[]
+- Anexos:
+  - pueden venir embebidos como lista con URL directa (filenet_firmado), por lo que NO siempre hace falta llamar a /getUrlDocument.
+  - si alguna respuesta no trae urls directas, /getUrlDocument puede completar.
+
+SALIDA OBJETIVO (para tu detector)
+- Cuando haya match (keywords en sumario + filtros de poder/tipo/organismo), devolver por norma:
+  - poder
+  - tipo
+  - organismo
+  - nombre
+  - sumario
+  - url_norma
+  - anexos (lista de objetos {nombre_anexo, url}) o lista vacía
+
