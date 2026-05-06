@@ -209,6 +209,13 @@ El rendimiento depende de la calidad de los parametros curados. Por eso el flujo
 
 Juan Draghi - Biblioteca CPAU, Consejo Profesional de Arquitectura y Urbanismo.
 
+## Uso de herramientas de IA
+
+El diseño metodológico, la implementación del código, la depuración del pipeline y la redacción de la documentación fueron desarrollados con asistencia de ChatGPT / Codex de OpenAI.
+
+Las decisiones de alcance, los criterios de relevancia, la curaduría de palabras clave, la validación de resultados y la orientación bibliotecaria del proyecto fueron definidos por el autor.
+
+
 ## Licencia
 
 MIT.
