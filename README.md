@@ -16,7 +16,7 @@ Por ese motivo, esta version abandona el enfoque ML/TDS+SVM como componente cent
 - normalizacion de texto,
 - palabras clave curadas,
 - patrones regex de normas relevantes,
-- organismos prioritarios,
+- organismos y siglas prioritarias,
 - revision manual para casos opacos.
 
 La decision es pragmatica: para un flujo bibliotecario de baja frecuencia positiva, una herramienta transparente y editable resulta mas util que un modelo dificil de entrenar, explicar y mantener.
@@ -79,7 +79,7 @@ Algunas expresiones, como las vinculadas con espacio publico, requieren contexto
 
 Los casos opacos se derivan a `REVISION_MANUAL` cuando:
 
-- el organismo pertenece a `LISTA_ORGANISMOS_PRIORIDAD`,
+- el organismo, el nombre de la norma o el sumario contienen una denominacion o sigla de `LISTA_ORGANISMOS_PRIORIDAD`,
 - el sumario contiene verbos de accion normativa,
 - y hay una referencia normativa, pero el objeto no queda suficientemente claro.
 

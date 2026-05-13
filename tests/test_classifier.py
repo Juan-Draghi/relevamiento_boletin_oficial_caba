@@ -68,6 +68,22 @@ class ClassifierTests(unittest.TestCase):
             result.motivo_deteccion,
         )
 
+    def test_priority_organism_sigla_in_norm_name_goes_to_manual_review(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 194/SSGOU/26",
+                "sumario": "Sustituye, el Anexo I de la Resolución N° 339-SSGOU/22",
+                "organismo": "Jefatura de Gabinete de Ministros",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, REVISION_MANUAL)
+        self.assertIn("sumario_opaco_patron", result.motivo_deteccion)
+        self.assertIn("organismo_prioritario: SSGOU", result.motivo_deteccion)
+
     def test_short_summary_alone_is_not_manual_review(self):
         result = classify_norma(
             {

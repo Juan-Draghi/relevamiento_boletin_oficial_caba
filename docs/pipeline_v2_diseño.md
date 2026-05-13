@@ -90,7 +90,7 @@ La lógica general es:
 
 - si hay keyword directa o norma curada en sumario, la norma es `RELEVANTE`
 - si hay keyword condicional, solo es `RELEVANTE` cuando existe contexto de acción normativa
-- si no hay keyword ni norma curada, pero hay combinación de organismo prioritario + acción normativa opaca, pasa a `REVISION_MANUAL`
+- si no hay keyword ni norma curada, pero hay combinación de organismo/sigla prioritaria + acción normativa opaca, pasa a `REVISION_MANUAL`
 - si no hay señales suficientes, se clasifica como `NO_RELEVANTE`
 - si no supera el filtro estructural, se clasifica como `DESCARTADA_FILTRO_ESTRUCTURAL`
 
@@ -122,7 +122,7 @@ CAPA 1 — Match directo sobre sumario
              ▼
 CAPA 2 — Casos para revisión manual
              │
-             ├─ Organismo prioritario + acción normativa opaca
+             ├─ Organismo/sigla prioritaria + acción normativa opaca
              │    → REVISION_MANUAL
              │
              └─ Sin señales adicionales
@@ -218,7 +218,7 @@ El objetivo no es descargar ni analizar automáticamente el texto completo, sino
 
 Una norma pasa a `REVISION_MANUAL` cuando ocurre esta condición:
 
-- el organismo emisor pertenece a `LISTA_ORGANISMOS_PRIORIDAD` y el sumario contiene un verbo de acción normativa más una referencia normativa
+- el organismo emisor, el nombre de la norma o el sumario contienen una sigla/denominación de `LISTA_ORGANISMOS_PRIORIDAD`, y el sumario contiene un verbo de acción normativa más una referencia normativa
 
 Ejemplos:
 
@@ -232,6 +232,7 @@ Ejemplos de motivos:
 
 - `sumario_opaco_patron`
 - `organismo_prioritario: DGROC`
+- `organismo_prioritario: SSGOU`
 
 ---
 
@@ -251,7 +252,7 @@ Una norma se marca como `REVISION_MANUAL` cuando:
 
 - no contiene keyword directa o condicional suficiente
 - no contiene norma curada
-- pero combina organismo prioritario con acción normativa opaca
+- pero combina organismo/sigla prioritaria con acción normativa opaca
 
 ### 4.3 NO_RELEVANTE
 
@@ -281,7 +282,7 @@ Una norma se marca como `DESCARTADA_FILTRO_ESTRUCTURAL` cuando:
 | `KEYWORDS_REQUIEREN_ACCION_NORMATIVA` | Keywords amplias que requieren contexto normativo adicional |
 | `VERBOS_ACCION` | Patrones verbales de modificación, derogación, aprobación, sustitución, etc. |
 | `LISTA_NORMAS_CURADAS` | Patrones regex de normas cuya referencia dispara relevancia directa |
-| `LISTA_ORGANISMOS_PRIORIDAD` | Organismos que activan revisión solo combinados con acción normativa opaca |
+| `LISTA_ORGANISMOS_PRIORIDAD` | Organismos o siglas que activan revisión solo combinados con acción normativa opaca |
 
 ---
 
@@ -332,5 +333,5 @@ Este diseño prioriza:
 3. Algunas keywords amplias requieren acción normativa adicional para evitar falsos positivos.
 4. Se elimina `UMBRAL_TOKENS_OPACO`; la longitud del sumario no dispara revisión manual.
 5. Las normas curadas son criterio de relevancia directa cuando aparecen en el sumario.
-6. Los casos ambiguos se derivan a revisión manual por organismo prioritario combinado con acción normativa opaca.
+6. Los casos ambiguos se derivan a revisión manual por organismo/sigla prioritaria combinado con acción normativa opaca.
 7. No se descarga ni analiza automáticamente el texto completo en esta versión del pipeline.

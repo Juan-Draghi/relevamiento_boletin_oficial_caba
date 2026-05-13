@@ -32,6 +32,7 @@ def classify_norma(norma: dict, config: DetectorConfig) -> ClassificationResult:
         return ClassificationResult(categoria_salida=DESCARTADA_FILTRO_ESTRUCTURAL)
 
     sumario = str(norma.get("sumario") or "")
+    nombre = str(norma.get("nombre") or "")
     organismo = str(norma.get("organismo") or "")
 
     keyword_matches = _match_entries(sumario, config.keywords)
@@ -66,7 +67,10 @@ def classify_norma(norma: dict, config: DetectorConfig) -> ClassificationResult:
 
     motivos: list[str] = []
 
-    organism_matches = _match_entries(organismo, config.organismos_prioridad)
+    organism_matches = _match_entries(
+        " ".join([organismo, nombre, sumario]),
+        config.organismos_prioridad,
+    )
     has_opaque_action = _has_action_verb(sumario, config) and _has_norm_reference(sumario)
     if organism_matches and has_opaque_action:
         motivos.append("sumario_opaco_patron")
