@@ -37,6 +37,23 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.categoria_salida, RELEVANTE)
         self.assertTrue(any(m.startswith("referencia_norma_curada:") for m in result.motivo_deteccion))
 
+    def test_curated_law_match_accepts_number_without_thousands_dot(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Decreto",
+                "sumario": "Sustituye el Anexo de la Ley 6927 y su modificatoria Ley 6942",
+                "organismo": "Otro organismo",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, RELEVANTE)
+        self.assertIn(
+            "referencia_norma_curada: [Ll]ey(?: [Nn]°?)? ?6\\.?927",
+            result.motivo_deteccion,
+        )
+
     def test_priority_organism_alone_is_not_manual_review(self):
         result = classify_norma(
             {
