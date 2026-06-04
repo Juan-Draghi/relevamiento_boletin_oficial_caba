@@ -305,33 +305,19 @@
     "[Ll]ey(?: [Nn]°?)? ?1\\.?540"
   ],
   "LISTA_ORGANISMOS_PRIORIDAD": [
-    "Administración Gubernamental de Ingresos Públicos",
     "AGC",
-    "Agencia de Protección Ambiental",
-    "Agencia Gubernamental de Control",
     "AGIP",
     "APRA",
-    "Comisión para la Plena Participación e Inclusión de las Personas con Discapacidad",
     "COPIDIS",
     "DGDCIV",
     "DGEVA",
     "DGFYCO",
     "DGHP",
-    "DGIUR",
     "DGROC",
-    "Dirección General de Defensa Civil",
-    "Dirección General de Evaluación Ambiental",
-    "Dirección General de Fiscalización y Control de Obras",
-    "Dirección General de Habilitaciones y Permisos",
-    "Dirección General de Interpretación Urbanística",
-    "Dirección General de Registro de Obras y Catastro",
     "SECACGC",
     "SECGDU",
-    "Secretaría de Gestión y Desarrollo Urbano",
     "SSGOU",
     "SSHA",
-    "Subsecretaría de Hacienda",
-    "UERESGP",
-    "Unidad Ejecutora del Régimen de Escuelas Seguras de Gestión Privada"
+    "UERESGP"
   ]
 }
