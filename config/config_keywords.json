@@ -300,7 +300,9 @@
     "[Ll]ey(?: [Nn]°?)? ?6\\.?779",
     "[Ll]ey(?: [Nn]°?)? ?6\\.?926",
     "[Ll]ey(?: [Nn]°?)? ?6\\.?927",
-    "[Ll]ey(?: [Nn]°?)? ?6\\.?928"
+    "[Ll]ey(?: [Nn]°?)? ?6\\.?928",
+    "[Dd]ecreto(?: [Nn]°?)? ?740/07",
+    "[Ll]ey(?: [Nn]°?)? ?1\\.?540"
   ],
   "LISTA_ORGANISMOS_PRIORIDAD": [
     "Administración Gubernamental de Ingresos Públicos",
