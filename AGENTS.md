@@ -26,8 +26,8 @@ Categorias de salida:
 - Algunas keywords amplias, como las vinculadas con espacio publico, requieren contexto de accion normativa para evitar permisos individuales irrelevantes.
 - Una norma va a `REVISION_MANUAL` cuando no fue relevante por Capa 1, pero combina:
   - organismo, sigla en nombre o sigla en sumario perteneciente a `LISTA_ORGANISMOS_PRIORIDAD`;
-  - verbo de accion normativa;
-  - referencia normativa.
+  - verbo de accion normativa o referencia normativa opaca, cuando el objeto no queda suficientemente claro.
+- Si una norma contiene una keyword suficiente y contexto de accion normativa cuando corresponde, debe clasificarse como `RELEVANTE`, no como `REVISION_MANUAL`.
 - No usar longitud de sumario como disparador de revision manual. `UMBRAL_TOKENS_OPACO` fue descartado.
 - No descargar ni interpretar automaticamente texto completo para resolver casos opacos. La decision se deja a revision humana.
 
@@ -80,7 +80,18 @@ La app corre en:
 http://127.0.0.1:7862/
 ```
 
-Si se modifica codigo o configuracion y la app ya esta abierta, indicar al usuario que reinicie con `stop_desktop.bat` y luego `run_desktop.bat`.
+Si se modifica codigo o configuracion y la app ya esta abierta, indicar siempre al usuario que debe reiniciarla para aplicar los cambios. Acompanar la indicacion con estos pasos:
+
+```bat
+stop_desktop.bat
+run_desktop.bat
+```
+
+Luego pedir que abra o recargue:
+
+```text
+http://127.0.0.1:7862/
+```
 
 ## Pruebas
 
@@ -118,6 +129,8 @@ git add <archivos>
 git commit -m "<mensaje>"
 git push origin main
 ```
+
+Si el usuario pide crear un PR, abrirlo como draft salvo que indique lo contrario. Si luego pide "ejecutar el PR", interpretar la accion como marcar el PR listo para revision y fusionarlo en la rama base, siempre verificando antes que el PR corresponda a los cambios ya validados.
 
 ## Estilo de implementacion
 
