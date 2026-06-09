@@ -209,6 +209,8 @@
     const parametroInput = document.getElementById("parametro");
     const parametroDate = document.getElementById("parametro-date");
     const parametroAdvanced = document.getElementById("parametro-advanced");
+    const parametroDateMode = document.querySelector('input[name="parametro_mode"][value="date"]');
+    const parametroAdvancedMode = document.querySelector('input[name="parametro_mode"][value="advanced"]');
     const configForm = document.getElementById("config-form");
     const configSubmit = document.getElementById("config-submit");
     const configFieldSelect = document.getElementById("config-field-select");
@@ -247,6 +249,12 @@
     function getSelectedParametroMode() {
       const selected = document.querySelector('input[name="parametro_mode"]:checked');
       return selected ? selected.value : "latest";
+    }
+
+    function selectParametroMode(modeInput) {
+      if (modeInput) {
+        modeInput.checked = true;
+      }
     }
 
     function formatApiDate(value) {
@@ -361,6 +369,11 @@
         }
       });
     }
+
+    parametroDate.addEventListener("focus", () => selectParametroMode(parametroDateMode));
+    parametroDate.addEventListener("input", () => selectParametroMode(parametroDateMode));
+    parametroAdvanced.addEventListener("focus", () => selectParametroMode(parametroAdvancedMode));
+    parametroAdvanced.addEventListener("input", () => selectParametroMode(parametroAdvancedMode));
 
     function updateProgress(job) {
       progressPanel.hidden = false;

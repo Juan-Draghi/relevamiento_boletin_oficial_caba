@@ -82,6 +82,37 @@ class ClassifierTests(unittest.TestCase):
         self.assertIn("sumario_opaco_patron", result.motivo_deteccion)
         self.assertIn("organismo_prioritario: DGROC", result.motivo_deteccion)
 
+    def test_priority_organism_with_action_verb_without_norm_reference_goes_to_manual_review(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 123/DGROC/26",
+                "sumario": "Aprueba nuevos criterios de aplicacion interna",
+                "organismo": "Dirección General de Registro de Obras y Catastro",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, REVISION_MANUAL)
+        self.assertIn("sumario_opaco_patron", result.motivo_deteccion)
+        self.assertIn("organismo_prioritario: DGROC", result.motivo_deteccion)
+
+    def test_priority_organism_with_norm_reference_without_action_verb_goes_to_manual_review(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "sumario": "Disposición 999/DGROC/25",
+                "organismo": "Dirección General de Registro de Obras y Catastro",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, REVISION_MANUAL)
+        self.assertIn("sumario_opaco_patron", result.motivo_deteccion)
+        self.assertIn("organismo_prioritario: DGROC", result.motivo_deteccion)
+
     def test_priority_organism_sigla_in_norm_name_goes_to_manual_review(self):
         result = classify_norma(
             {
@@ -97,6 +128,43 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.categoria_salida, REVISION_MANUAL)
         self.assertIn("sumario_opaco_patron", result.motivo_deteccion)
         self.assertIn("organismo_prioritario: SSGOU", result.motivo_deteccion)
+
+    def test_ssgou_public_space_case_is_relevant_by_conditional_keyword(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 320/SSGOU/26",
+                "sumario": (
+                    "Aprueba los lineamientos y requisitos para el expendio y/o venta de bebidas "
+                    "no alcohólicas y/o servicio de cafetería en emplazamientos de puestos de venta "
+                    "de diarios, revistas y afines en el espacio público"
+                ),
+                "organismo": "",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, RELEVANTE)
+        self.assertIn("keyword_condicional_sumario: espacio público", result.motivo_deteccion)
+
+    def test_dgfyco_demolition_case_is_relevant_by_direct_keyword(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Disposición",
+                "nombre": "Disposición N° 374/DGFYCO/26",
+                "sumario": (
+                    "Aprueba Declaración Jurada de Corte Parcial de Suministro para Demolición "
+                    "Parcial y la Declaración Jurada de: Inexistencia de Conexión de Gas"
+                ),
+                "organismo": "",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, RELEVANTE)
+        self.assertIn("keyword_sumario: demolición", result.motivo_deteccion)
 
     def test_short_summary_alone_is_not_manual_review(self):
         result = classify_norma(

@@ -65,21 +65,33 @@ def classify_norma(norma: dict, config: DetectorConfig) -> ClassificationResult:
             motivo_deteccion=tuple(f"referencia_norma_curada: {match}" for match in curated_matches),
         )
 
-    motivos: list[str] = []
+    motivos_revision_manual = _manual_review_motivos(organismo, nombre, sumario, config)
+    if motivos_revision_manual:
+        return ClassificationResult(
+            categoria_salida=REVISION_MANUAL,
+            motivo_deteccion=tuple(motivos_revision_manual),
+        )
 
+    return ClassificationResult(categoria_salida=NO_RELEVANTE)
+
+
+def _manual_review_motivos(
+    organismo: str,
+    nombre: str,
+    sumario: str,
+    config: DetectorConfig,
+) -> list[str]:
     organism_matches = _match_entries(
         " ".join([organismo, nombre, sumario]),
         config.organismos_prioridad,
     )
-    has_opaque_action = _has_action_verb(sumario, config) and _has_norm_reference(sumario)
-    if organism_matches and has_opaque_action:
-        motivos.append("sumario_opaco_patron")
-        motivos.extend(f"organismo_prioritario: {match.original}" for match in organism_matches)
+    has_manual_review_signal = _has_action_verb(sumario, config) or _has_norm_reference(sumario)
+    if not organism_matches or not has_manual_review_signal:
+        return []
 
-    if motivos:
-        return ClassificationResult(categoria_salida=REVISION_MANUAL, motivo_deteccion=tuple(motivos))
-
-    return ClassificationResult(categoria_salida=NO_RELEVANTE)
+    motivos = ["sumario_opaco_patron"]
+    motivos.extend(f"organismo_prioritario: {match.original}" for match in organism_matches)
+    return motivos
 
 
 def passes_structural_filter(norma: dict, config: DetectorConfig) -> bool:

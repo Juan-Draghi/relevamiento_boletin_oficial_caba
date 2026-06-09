@@ -80,8 +80,9 @@ Algunas expresiones, como las vinculadas con espacio publico, requieren contexto
 Los casos opacos se derivan a `REVISION_MANUAL` cuando:
 
 - el organismo, el nombre de la norma o el sumario contienen una denominacion o sigla de `LISTA_ORGANISMOS_PRIORIDAD`,
-- el sumario contiene verbos de accion normativa,
-- y hay una referencia normativa, pero el objeto no queda suficientemente claro.
+- y el sumario contiene verbos de accion normativa o hay una referencia normativa, pero el objeto no queda suficientemente claro.
+
+Si una norma contiene una keyword suficiente y contexto de accion normativa cuando corresponde, se clasifica como `RELEVANTE`. La derivacion a `REVISION_MANUAL` se aplica a casos opacos sin relevancia confirmada por Capa 1.
 
 La aplicacion no intenta resolver estos casos leyendo automaticamente el texto completo. Los muestra para revision experta.
 
