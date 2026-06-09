@@ -102,6 +102,8 @@ git status -sb
 
 No mezclar cambios de logica con cambios de listas si pueden separarse.
 
+Despues de cada cambio funcional, de configuracion o documentacion, preguntar al usuario si desea registrar y subir los cambios a GitHub. No hacer commit ni push sin confirmacion explicita.
+
 Mensajes recomendados:
 
 - `Actualizar listados de configuracion`
