@@ -130,6 +130,8 @@ git commit -m "<mensaje>"
 git push origin main
 ```
 
+Si el usuario pide crear un PR, abrirlo como draft salvo que indique lo contrario. Si luego pide "ejecutar el PR", interpretar la accion como marcar el PR listo para revision y fusionarlo en la rama base, siempre verificando antes que el PR corresponda a los cambios ya validados.
+
 ## Estilo de implementacion
 
 - Priorizar Python simple y mantenible.
