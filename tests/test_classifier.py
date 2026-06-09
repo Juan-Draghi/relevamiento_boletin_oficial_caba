@@ -80,10 +80,7 @@ class ClassifierTests(unittest.TestCase):
 
         self.assertEqual(result.categoria_salida, REVISION_MANUAL)
         self.assertIn("sumario_opaco_patron", result.motivo_deteccion)
-        self.assertIn(
-            "organismo_prioritario: Dirección General de Registro de Obras y Catastro",
-            result.motivo_deteccion,
-        )
+        self.assertIn("organismo_prioritario: DGROC", result.motivo_deteccion)
 
     def test_priority_organism_sigla_in_norm_name_goes_to_manual_review(self):
         result = classify_norma(
