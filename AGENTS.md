@@ -93,7 +93,7 @@ Cuando se desarrolle una solucion, estructurar la respuesta asi:
 
 Este repositorio contiene una aplicacion local para detectar normativa relevante del Boletin Oficial CABA para el servicio de referencia especializada de la Biblioteca CPAU.
 
-El proyecto es una evolucion del enfoque anterior basado en ML/TDS+SVM. No reintroducir aprendizaje supervisado salvo pedido explicito del usuario. La decision vigente es usar reglas trazables, configuracion editable y revision manual, porque la proporcion historica de positivos es muy baja y el modelo supervisado terminaba funcionando como una busqueda de palabras clave.
+El proyecto es una evolucion del enfoque anterior basado en ML/TDS+SVM. No reintroducir aprendizaje supervisado salvo pedido explicito del usuario. La decision vigente es usar reglas trazables, configuracion curada, revision manual e indicadores calculados desde decisiones profesionales, porque la proporcion historica de positivos es muy baja y el modelo supervisado terminaba funcionando como una busqueda de palabras clave.
 
 ## Objetivo operativo
 
@@ -125,10 +125,15 @@ Categorias de salida:
 - `bo_detector/classifier.py`: reglas de clasificacion.
 - `bo_detector/config.py`: carga y validacion de configuracion.
 - `bo_detector/text.py`: normalizacion y busqueda textual.
+- `bo_detector/review_store.py`: persistencia JSON, decisiones e indicadores.
 - `config/config_keywords.json`: parametros curados.
-- `desktop_app/app.py`: aplicacion Flask local.
-- `desktop_app/templates/index.html`: interfaz.
+- `data/seguimiento/`: registros semanales generados por el uso real.
+- `desktop_app/app.py`: aplicacion Flask local y endpoints.
+- `desktop_app/templates/index.html`: estructura de la interfaz.
+- `desktop_app/static/app.js`: interacciones, revision manual e indicadores.
 - `desktop_app/static/styles.css`: estilos.
+- `docs/adr/`: decisiones arquitectonicas.
+- `docs/seguimiento/`: contrato operativo y log de ajustes.
 - `tests/`: pruebas unitarias.
 
 ## Configuracion
@@ -148,8 +153,37 @@ Precauciones:
 - No borrar ni reordenar listas sin una razon operativa.
 - Si se ajusta una regex de `LISTA_NORMAS_CURADAS`, validar que compile.
 - Los patrones de leyes deben contemplar variantes con y sin punto de miles, por ejemplo `6\.?927`.
+- No reintroducir un editor de configuracion en la interfaz.
+- Los cambios de configuracion deben realizarse mediante el skill especifico previsto para ese flujo, con evidencia y motivo registrados en `docs/seguimiento/log_ajustes.md`.
+- Hasta que el skill quede implementado, no modificar la configuracion salvo pedido explicito del usuario.
 - Los cambios de configuracion deben commitearse cuando responden a un ajuste real de deteccion.
 - La app puede generar backups `config/config_keywords.backup_*.json`; no versionarlos.
+
+## Registro operativo, revision manual e indicadores
+
+- Cada ejemplar consultado se registra en `data/seguimiento/AAAA-WNN.json`, segun la semana ISO de su fecha de publicacion.
+- Una consulta repetida debe actualizar el mismo ejemplar sin duplicar normas ni conteos.
+- La categoria automatica original es inmutable. La decision profesional se guarda en un campo separado.
+- Las decisiones admitidas son `SIN_REVISAR`, `RELEVANTE_CONFIRMADA` y `NO_RELEVANTE_CONFIRMADA`.
+- `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` deben permanecer ocultas en acordeones y desplegarse solo para revisar posibles falsos negativos.
+- Un falso negativo es una norma originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` confirmada como relevante. Requiere una evidencia breve.
+- Un caso `REVISION_MANUAL` confirmado como relevante no es un falso negativo.
+- El control complementario admite `PENDIENTE`, `PARCIAL` y `COMPLETO`; la interfaz debe confirmar visualmente el guardado.
+- No agregar observaciones opcionales a las decisiones ordinarias ni al cierre del ejemplar.
+- La fecha del registro se toma del ejemplar, no del reloj de ejecucion.
+- Los indicadores se calculan desde los JSON guardados; no persistir totales derivados.
+- Mantener separados el volumen operativo y los indicadores de desempeno.
+- Definiciones vigentes:
+  - cobertura de validacion = decisiones registradas / total procesado;
+  - precision automatica = relevantes automaticas confirmadas / alertas automaticas validadas;
+  - tasa de falsos positivos = alertas automaticas descartadas / alertas automaticas validadas;
+  - tasa de revision manual = casos `REVISION_MANUAL` / total procesado;
+  - rendimiento de revision manual = relevantes confirmadas / casos `REVISION_MANUAL` resueltos;
+  - reduccion de lectura = (`NO_RELEVANTE` + `DESCARTADA_FILTRO_ESTRUCTURAL`) / total procesado.
+- Informar `N/D` cuando no exista un denominador suficiente.
+- No calcular recall ni F1 hasta contar con un universo completamente revisado que permita conocer los falsos negativos de forma defendible.
+- Tratar `data/seguimiento/*.json` como datos reales del usuario: no borrarlos, sobrescribirlos, normalizarlos ni usarlos para pruebas destructivas.
+- Para pruebas manuales o de navegador, usar una copia temporal y verificar su eliminacion al finalizar.
 
 ## Aplicacion de escritorio
 

@@ -31,6 +31,18 @@ from bo_detector.flatten import flatten_normas_payload
 from bo_detector.pipeline import classify_records
 from bo_detector.text import normalize_text
 
+from bo_detector.review_store import (
+    calculate_week_indicators,
+    list_week_keys,
+    load_week,
+    record_key,
+    update_bulletin_review,
+    update_norm_review,
+    update_week_notes,
+    upsert_analysis,
+    week_key_for_date,
+)
+
 
 def get_bundle_root() -> Path:
     if getattr(sys, "frozen", False):
@@ -41,6 +53,8 @@ def get_bundle_root() -> Path:
 BUNDLE_ROOT = get_bundle_root()
 TEMPLATES_DIR = BUNDLE_ROOT / "templates"
 STATIC_DIR = BUNDLE_ROOT / "static"
+REVIEW_DATA_DIR = PROJECT_ROOT / "data" / "seguimiento"
+REVIEW_DATA_DIR = Path(os.getenv("BOCABA_REVIEW_DATA_DIR", str(REVIEW_DATA_DIR)))
 CONFIG_PATH = DEFAULT_CONFIG_PATH
 EDITABLE_CONFIG_FIELDS = (
     "KEYWORDS",
@@ -116,6 +130,7 @@ def run_analysis_job(
             include_no_relevante=True,
             include_descartadas=True,
         )
+        classified_all = list({record_key(item): item for item in classified_all}.values())
         category_counts = Counter(item["categoria_salida"] for item in classified_all)
 
         visible_results = [
@@ -123,8 +138,32 @@ def run_analysis_job(
             for item in classified_all
             if _should_include_item(item["categoria_salida"], include_no_relevante, include_descartadas)
         ]
+        visible_results = classified_all
 
         summary = build_summary(payload, records, category_counts)
+
+        summary["total_normas"] = len(classified_all)
+        set_job_state(job_id, message="Guardando registro semanal...", progress_percent=85)
+        review_state = upsert_analysis(REVIEW_DATA_DIR, summary, classified_all)
+        summary.update(
+            {
+                "semana": review_state["semana"],
+                "boletin_clave": review_state["boletin_clave"],
+                "control_complementario": review_state["control_complementario"],
+                "observaciones_boletin": review_state["observaciones_boletin"],
+            }
+        )
+        for item in classified_all:
+            key = record_key(item)
+            stored = review_state["normas"].get(key) or {}
+            item["_clave_registro"] = key
+            item["_categoria_automatica_original"] = (
+                stored.get("categoria_automatica_original")
+                or item.get("categoria_salida")
+                or ""
+            )
+            item["_decision_manual"] = stored.get("decision_manual") or "SIN_REVISAR"
+            item["_observacion_revision"] = stored.get("observacion_revision") or ""
         message = build_completion_message(category_counts)
 
         set_job_state(
@@ -185,6 +224,14 @@ def build_completion_message(category_counts: Counter[str]) -> str:
 def format_result(item: dict[str, Any]) -> dict[str, Any]:
     anexos = item.get("anexos") if isinstance(item.get("anexos"), list) else []
     return {
+
+        "clave_registro": item.get("_clave_registro") or "",
+        "categoria_automatica_original": item.get("_categoria_automatica_original") or item.get("categoria_salida", ""),
+        "categoria_original_label": category_label(
+            str(item.get("_categoria_automatica_original") or item.get("categoria_salida", ""))
+        ),
+        "decision_manual": item.get("_decision_manual") or "SIN_REVISAR",
+        "observacion_revision": item.get("_observacion_revision") or "",
         "categoria_salida": item.get("categoria_salida", ""),
         "categoria_label": category_label(str(item.get("categoria_salida", ""))),
         "nombre": item.get("nombre") or "",
@@ -363,6 +410,13 @@ def api_analyze_status(job_id: str):
 
 @app.post("/api/config")
 def api_save_config():
+
+    return jsonify(
+        {
+            "status": "error",
+            "message": "La edicion de configuracion fue retirada de la aplicacion.",
+        }
+    ), 404
     try:
         counts = save_config_editor_values(dict(request.form))
         return jsonify(
@@ -376,6 +430,72 @@ def api_save_config():
         return jsonify({"status": "error", "message": str(exc)}), 400
 
 
+
+@app.get("/api/indicators/weeks")
+def api_indicator_weeks():
+    current_week = week_key_for_date(datetime.now().date())
+    weeks = sorted(set(list_week_keys(REVIEW_DATA_DIR) + [current_week]), reverse=True)
+    return jsonify({"weeks": weeks, "current_week": current_week})
+
+
+@app.get("/api/indicators")
+def api_indicators():
+    week_key = (request.args.get("week") or week_key_for_date(datetime.now().date())).strip()
+    try:
+        return jsonify(calculate_week_indicators(load_week(REVIEW_DATA_DIR, week_key)))
+    except (ValueError, OSError) as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
+
+@app.post("/api/review/norma")
+def api_update_norm_review():
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = update_norm_review(
+            REVIEW_DATA_DIR,
+            str(payload.get("semana") or ""),
+            str(payload.get("boletin_clave") or ""),
+            str(payload.get("clave_registro") or ""),
+            str(payload.get("decision_manual") or ""),
+            str(payload.get("observacion") or ""),
+        )
+        return jsonify({"status": "ok", **result})
+    except (ValueError, OSError) as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
+
+@app.post("/api/review/boletin")
+def api_update_bulletin_review():
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = update_bulletin_review(
+            REVIEW_DATA_DIR,
+            str(payload.get("semana") or ""),
+            str(payload.get("boletin_clave") or ""),
+            str(payload.get("control_complementario") or ""),
+            str(payload.get("observaciones") or ""),
+        )
+        return jsonify({"status": "ok", **result})
+    except (ValueError, OSError) as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
+
+@app.post("/api/review/semana")
+def api_update_week_notes():
+    payload = request.get_json(silent=True) or {}
+    adjustments = payload.get("ajustes_derivados")
+    if not isinstance(adjustments, list):
+        return jsonify({"status": "error", "message": "ajustes_derivados debe ser una lista."}), 400
+    try:
+        result = update_week_notes(
+            REVIEW_DATA_DIR,
+            str(payload.get("semana") or ""),
+            adjustments,
+            str(payload.get("observaciones") or ""),
+        )
+        return jsonify({"status": "ok", **result})
+    except (ValueError, OSError) as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
 def open_browser(port: int) -> None:
     webbrowser.open_new(f"http://127.0.0.1:{port}")
 

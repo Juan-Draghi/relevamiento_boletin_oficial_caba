@@ -8,3 +8,5 @@ config/config_keywords.backup_*.json
 .ruff_cache/
 
 desktop_app/_config_save_test/
+
+data/seguimiento/*.tmp

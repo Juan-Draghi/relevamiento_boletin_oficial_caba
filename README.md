@@ -1,140 +1,199 @@
-# Detector de normativa relevante del Boletin Oficial CABA
+# Detector de normativa relevante del Boletín Oficial CABA
 
-Aplicacion local para asistir el relevamiento diario de normativa del Boletin Oficial de la Ciudad de Buenos Aires vinculada con arquitectura, urbanismo, construccion, habilitaciones, ambiente, catastro, ejercicio profesional y temas afines al servicio de referencia especializada de la Biblioteca CPAU.
+Aplicación local para asistir el relevamiento diario de normativa del Boletín Oficial de la Ciudad de Buenos Aires vinculada con arquitectura, urbanismo, construcción, habilitaciones, ambiente, catastro, ejercicio profesional y temas afines al servicio de referencia especializada de la Biblioteca CPAU.
 
-Este repositorio es una evolucion operativa de [`boletin-oficial-caba-ml`](https://github.com/Juan-Draghi/boletin-oficial-caba-ml), que exploraba un pipeline de aprendizaje supervisado con TF-IDF + SVM para detectar normativa relevante.
+Este repositorio es una evolución operativa de [`boletin-oficial-caba-ml`](https://github.com/Juan-Draghi/boletin-oficial-caba-ml), que exploraba un pipeline de aprendizaje supervisado con TF-IDF + SVM.
 
-## Por que cambio el enfoque
+## Enfoque vigente
 
-El proyecto anterior demostro que el problema era relevante y que podia abordarse con automatizacion. Sin embargo, durante las pruebas operativas aparecio una limitacion estructural: la cantidad de normas verdaderamente relevantes para arquitectura, urbanismo y construccion es muy baja respecto del total publicado en cada boletin.
+La proporción histórica de normas relevantes es muy baja respecto del total publicado. En las pruebas del proyecto anterior, el modelo supervisado tendía a reproducir una búsqueda por palabras clave sin aportar una mejora estable que justificara su complejidad.
 
-En la practica, el porcentaje de positivos era inferior al 3%. Con esa distribucion, el dataset disponible no permitia sostener un modelo supervisado robusto: los reentrenamientos agregaban ejemplos, pero el clasificador tendia a devolver principalmente coincidencias de palabras clave y no aportaba una mejora estable en la determinacion de relevancia.
+La versión actual utiliza un procedimiento más simple, trazable y mantenible:
 
-Por ese motivo, esta version abandona el enfoque ML/TDS+SVM como componente central y adopta una arquitectura mas simple, trazable y mantenible:
+- reglas explícitas;
+- normalización de texto;
+- palabras clave curadas;
+- patrones regex de normas relevantes;
+- organismos y siglas prioritarias;
+- revisión profesional de casos relevantes, dudosos y posibles omisiones.
 
-- reglas explicitas,
-- normalizacion de texto,
-- palabras clave curadas,
-- patrones regex de normas relevantes,
-- organismos y siglas prioritarias,
-- revision manual para casos opacos.
+No se utiliza aprendizaje supervisado como componente del detector.
 
-La decision es pragmatica: para un flujo bibliotecario de baja frecuencia positiva, una herramienta transparente y editable resulta mas util que un modelo dificil de entrenar, explicar y mantener.
+## Categorías de salida
 
-## Que hace
+Cada norma recibe una categoría automática original:
 
-La aplicacion consulta la API del Boletin Oficial CABA, procesa las normas publicadas y clasifica cada registro en categorias operativas:
+- `RELEVANTE`: presenta una señal suficiente de interés.
+- `REVISION_MANUAL`: caso indirecto u opaco que requiere decisión profesional.
+- `NO_RELEVANTE`: pasó el filtro estructural, pero no presenta señales suficientes.
+- `DESCARTADA_FILTRO_ESTRUCTURAL`: quedó excluida por poder o tipo de norma.
 
-- `RELEVANTE`: normas que deben revisarse o incorporarse al seguimiento.
-- `REVISION_MANUAL`: casos indirectos u opacos que requieren decision humana.
-- `NO_RELEVANTE`: normas que pasan el filtro estructural pero no tienen senales suficientes.
-- `DESCARTADA_FILTRO_ESTRUCTURAL`: registros excluidos por poder o tipo de norma.
-
-El criterio principal es deliberadamente sensible: si una keyword relevante aparece en el sumario, la norma se considera relevante. Esto responde a una caracteristica de la fuente: los sumarios son breves y, cuando mencionan terminos como habilitacion, catastro o impacto ambiental, esa mencion suele ser significativa.
+La categoría automática se conserva aunque posteriormente se registre una decisión manual o cambie la configuración.
 
 ## Fuente de datos
 
-La fuente principal es la API del Boletin Oficial CABA:
+La fuente principal es la API del Boletín Oficial CABA:
 
 ```text
 GET /obtenerBoletin/{parametro}/true
 ```
 
-El parametro puede ser:
+El parámetro puede ser:
 
-- `0`: ultimo boletin publicado.
-- `dd-mm-aaaa`: boletin de una fecha especifica.
-- numero de boletin: consulta directa por numero.
+- `0`: último boletín publicado;
+- `dd-mm-aaaa`: boletín de una fecha específica;
+- número de boletín: consulta directa por número.
 
-## Pipeline de deteccion
+La fecha utilizada para el registro es la fecha de publicación informada por el ejemplar.
+
+## Pipeline de detección
 
 ### 1. Filtro estructural
 
-Se consideran solamente los poderes y tipos de norma definidos en `config/config_keywords.json`.
+Se consideran los poderes y tipos de norma definidos en `config/config_keywords.json`.
 
-Ejemplos de tipos incluidos:
-
-- Ley
-- Ley de Aprobacion Inicial
-- Decreto
-- Decreto de Necesidad y Urgencia
-- Resolucion
-- Disposicion
-- Aclaracion
-
-### 2. Deteccion directa
+### 2. Detección directa
 
 Una norma se clasifica como `RELEVANTE` si el sumario contiene:
 
-- una keyword de `KEYWORDS`, o
+- una expresión de `KEYWORDS`; o
 - una referencia que coincide con `LISTA_NORMAS_CURADAS`.
 
-Las busquedas se realizan con texto normalizado para reducir problemas por mayusculas, acentos y variantes Unicode.
+Las búsquedas usan texto normalizado para reducir problemas por mayúsculas, acentos y variantes Unicode.
 
 ### 3. Keywords condicionales
 
-Algunas expresiones, como las vinculadas con espacio publico, requieren contexto normativo adicional. Esto evita marcar como relevantes los permisos individuales de uso del espacio publico, pero permite detectar cambios en las reglas que regulan esos permisos.
+Algunas expresiones amplias, como las vinculadas con espacio público, requieren contexto de acción normativa. Esto evita marcar permisos individuales como relevantes y permite detectar cambios generales en las reglas.
 
-### 4. Revision manual
+### 4. Revisión manual
 
-Los casos opacos se derivan a `REVISION_MANUAL` cuando:
+Una norma se deriva a `REVISION_MANUAL` cuando no fue relevante por detección directa y combina:
 
-- el organismo, el nombre de la norma o el sumario contienen una denominacion o sigla de `LISTA_ORGANISMOS_PRIORIDAD`,
-- y el sumario contiene verbos de accion normativa o hay una referencia normativa, pero el objeto no queda suficientemente claro.
+- un organismo o una sigla de `LISTA_ORGANISMOS_PRIORIDAD`; y
+- una acción normativa o una referencia normativa opaca cuyo objeto no puede determinarse con seguridad.
 
-Si una norma contiene una keyword suficiente y contexto de accion normativa cuando corresponde, se clasifica como `RELEVANTE`. La derivacion a `REVISION_MANUAL` se aplica a casos opacos sin relevancia confirmada por Capa 1.
+La aplicación no descarga ni interpreta automáticamente el texto completo para resolver estos casos.
 
-La aplicacion no intenta resolver estos casos leyendo automaticamente el texto completo. Los muestra para revision experta.
+## Aplicación de escritorio
 
-## Aplicacion de escritorio
+La aplicación Flask está pensada para el uso diario en Windows. Permite:
 
-El proyecto incluye una aplicacion local en Flask pensada para uso diario en Windows.
+- consultar el último boletín publicado;
+- consultar ejemplares retrospectivos desde un calendario;
+- ingresar un número de boletín u otro parámetro admitido;
+- revisar las normas `RELEVANTE` y `REVISION_MANUAL`;
+- guardar una decisión profesional por norma mediante casillas de selección;
+- desplegar `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` únicamente para registrar posibles falsos negativos;
+- indicar si el control complementario está pendiente, parcial o completo;
+- consultar volumen operativo e indicadores de desempeño en una pestaña separada;
+- consultar un resumen de la configuración en modo de solo lectura.
 
-Permite:
+La interfaz no incluye observaciones opcionales. Sólo se solicita una evidencia breve cuando una norma originalmente no relevante o descartada se confirma como relevante.
 
-- consultar el ultimo boletin publicado;
-- consultar boletines retrospectivos desde un calendario;
-- ingresar un parametro avanzado, como numero de boletin;
-- ver metricas del procesamiento;
-- revisar normas detectadas;
-- editar desde la interfaz:
-  - `KEYWORDS`,
-  - `LISTA_NORMAS_CURADAS`,
-  - `LISTA_ORGANISMOS_PRIORIDAD`;
-- crear backups automaticos antes de guardar cambios de configuracion;
-- crear un acceso directo en el Escritorio.
+## Registro operativo
 
-## Instalacion
+Cada consulta se guarda en un archivo JSON UTF-8 por semana ISO, de lunes a domingo:
+
+```text
+data/seguimiento/AAAA-WNN.json
+```
+
+El registro conserva:
+
+- ejemplar y fecha de publicación;
+- normas deduplicadas;
+- categoría automática original;
+- decisión profesional;
+- evidencia de falsos negativos cuando corresponde;
+- estado del control complementario.
+
+Una consulta repetida actualiza el mismo ejemplar y no vuelve a sumar sus normas. Los indicadores se calculan desde los registros guardados; no se persisten totales derivados.
+
+### Decisiones manuales
+
+- `SIN_REVISAR`: todavía no existe una decisión profesional.
+- `RELEVANTE_CONFIRMADA`: la relevancia fue confirmada.
+- `NO_RELEVANTE_CONFIRMADA`: la norma fue descartada por la revisión profesional.
+
+Un caso de `REVISION_MANUAL` confirmado como relevante no es un falso negativo. Sólo son falsos negativos las normas originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` luego confirmadas como relevantes.
+
+## Indicadores semanales
+
+La pestaña Indicadores separa dos grupos.
+
+### Volumen operativo
+
+- días de uso;
+- normas procesadas;
+- relevantes automáticas;
+- casos de revisión manual;
+- relevantes confirmadas;
+- relevantes surgidas de revisión manual;
+- falsos negativos;
+- estado del control complementario.
+
+### Desempeño del detector
+
+- **Cobertura de validación:** decisiones profesionales registradas sobre el total procesado.
+- **Precisión automática:** alertas automáticas confirmadas como relevantes sobre alertas automáticas validadas.
+- **Tasa de falsos positivos:** alertas automáticas descartadas sobre alertas automáticas validadas.
+- **Tasa de revisión manual:** casos `REVISION_MANUAL` sobre el total procesado.
+- **Rendimiento de revisión manual:** casos confirmados como relevantes sobre casos de revisión manual resueltos.
+- **Reducción de lectura:** normas `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` sobre el total procesado.
+
+La interfaz muestra una descripción y la base utilizada para cada porcentaje. Cuando no existe un denominador suficiente, informa `N/D`.
+
+No se calculan recall ni F1 porque requieren un universo completamente revisado. Podrán evaluarse cuando el uso diario produzca una base de verdad suficientemente completa y controlada.
+
+## Configuración y trazabilidad
+
+El archivo central es:
+
+```text
+config/config_keywords.json
+```
+
+Contiene:
+
+- `PODERES_INCLUIDOS`;
+- `TIPOS_NORMA_INCLUIDOS`;
+- `KEYWORDS`;
+- `KEYWORDS_REQUIEREN_ACCION_NORMATIVA`;
+- `VERBOS_ACCION`;
+- `LISTA_NORMAS_CURADAS`;
+- `LISTA_ORGANISMOS_PRIORIDAD`.
+
+La configuración ya no se edita desde la aplicación. Los cambios deberán realizarse mediante un skill específico y quedar justificados en `docs/seguimiento/log_ajustes.md`. La creación de ese skill corresponde a una etapa posterior del proyecto.
+
+## Instalación
 
 Requisitos:
 
-- Windows
-- Python 3.11 o superior
-- conexion a internet para consultar la API
+- Windows;
+- Python 3.11 o superior;
+- conexión a internet para consultar la API.
 
-Desde la carpeta del proyecto, ejecutar:
+Desde la carpeta del proyecto:
 
 ```bat
 install_desktop.bat
 ```
 
-Esto instala las dependencias de la aplicacion local.
-
 ## Uso
 
-Para abrir la aplicacion:
+Para iniciar la aplicación:
 
 ```bat
 run_desktop.bat
 ```
 
-La app se abre en:
+La interfaz se abre en:
 
 ```text
 http://127.0.0.1:7862/
 ```
 
-Para cerrarla:
+Para detenerla:
 
 ```bat
 stop_desktop.bat
@@ -146,76 +205,69 @@ Para crear un acceso directo en el Escritorio:
 crear_acceso_directo_escritorio.bat
 ```
 
-## Configuracion
+Después de modificar código o configuración, detener y volver a iniciar la aplicación.
 
-El archivo principal de parametros es:
-
-```text
-config/config_keywords.json
-```
-
-Contiene:
-
-- `PODERES_INCLUIDOS`
-- `TIPOS_NORMA_INCLUIDOS`
-- `KEYWORDS`
-- `KEYWORDS_REQUIEREN_ACCION_NORMATIVA`
-- `VERBOS_ACCION`
-- `LISTA_NORMAS_CURADAS`
-- `LISTA_ORGANISMOS_PRIORIDAD`
-
-Las listas `KEYWORDS` y `LISTA_ORGANISMOS_PRIORIDAD` se muestran ordenadas alfabeticamente en la interfaz. Al guardar cambios, la aplicacion genera una copia de respaldo en la carpeta `config`.
-
-## Estructura del repositorio
+## Estructura principal
 
 ```text
 relevamiento_boletin_oficial_caba/
-├── bo_detector/                 # Motor de consulta, normalizacion y clasificacion
-├── config/                      # Parametros editables del detector
-├── desktop_app/                 # Aplicacion local Flask
-├── docs/                        # Documentacion tecnica y materiales de trabajo
-├── tests/                       # Pruebas unitarias
-├── install_desktop.bat          # Instalacion de dependencias
-├── run_desktop.bat              # Ejecucion de la app local
-├── run_desktop_silencioso.vbs   # Lanzador sin consola visible
-├── stop_desktop.bat             # Cierre de la app local
+├── bo_detector/
+│   ├── api.py                  # Cliente de la API
+│   ├── classifier.py           # Reglas de clasificación
+│   ├── flatten.py              # Aplanamiento del payload
+│   ├── review_store.py         # Persistencia e indicadores
+│   └── text.py                 # Normalización textual
+├── config/
+│   └── config_keywords.json    # Parámetros curados
+├── data/seguimiento/           # Registros JSON semanales
+├── desktop_app/
+│   ├── app.py                  # Aplicación Flask y endpoints
+│   ├── static/app.js           # Interacciones de la interfaz
+│   ├── static/styles.css       # Estilos CPAU
+│   └── templates/index.html    # Estructura de la interfaz
+├── docs/                       # Documentación, ADR y log
+├── tests/                      # Pruebas unitarias
+├── install_desktop.bat
+├── run_desktop.bat
+├── run_desktop_silencioso.vbs
+├── stop_desktop.bat
 └── crear_acceso_directo_escritorio.bat
 ```
 
 ## Pruebas
 
-Para ejecutar las pruebas:
+Ejecutar:
 
 ```bat
 python -m unittest discover -s tests
 ```
 
-Las pruebas cubren:
+La suite cubre el detector, la persistencia semanal, deduplicación, decisiones manuales, falsos negativos, control complementario, indicadores y endpoints de la aplicación.
 
-- normalizacion de texto;
-- filtro estructural;
-- deteccion por keywords;
-- deteccion por normas curadas;
-- casos de revision manual;
-- exclusion de falsos positivos frecuentes;
-- aplanamiento del payload de la API.
+## Documentación
+
+- [Registro operativo e indicadores](docs/seguimiento/registro_operativo.md)
+- [Log de ajustes derivados](docs/seguimiento/log_ajustes.md)
+- [ADR-001: registro semanal y revisión manual](docs/adr/ADR-001-registro-semanal-revision-manual.md)
+- [ADR-002: indicadores y gobernanza de configuración](docs/adr/ADR-002-indicadores-y-gobernanza-configuracion.md)
 
 ## Limitaciones
 
-La herramienta no reemplaza la revision profesional. Su funcion es reducir el volumen de lectura diaria y hacer mas consistente la deteccion inicial.
+La herramienta no reemplaza la revisión profesional. Su objetivo es reducir el volumen de lectura y hacer más consistente la detección inicial.
 
-El rendimiento depende de la calidad de los parametros curados. Por eso el flujo esperado es iterativo: revisar resultados reales, detectar falsos positivos o falsos negativos y ajustar las listas.
+Los indicadores describen el desempeño observado sobre las decisiones registradas. Durante la etapa inicial deben interpretarse como métricas operativas en construcción y revisarse con el uso diario antes de establecer objetivos institucionales.
+
+No se reconstruyen datos históricos sin evidencia y no se modifica retroactivamente la categoría automática original.
 
 ## Autor
 
-Juan Draghi - Biblioteca CPAU, Consejo Profesional de Arquitectura y Urbanismo.
+Juan Draghi — Biblioteca CPAU, Consejo Profesional de Arquitectura y Urbanismo.
 
 ## Uso de herramientas de IA
 
 El diseño metodológico, la implementación del código, la depuración del pipeline y la redacción de la documentación fueron desarrollados con asistencia de ChatGPT / Codex de OpenAI.
 
 Las decisiones de alcance, los criterios de relevancia, la curaduría de palabras clave, la validación de resultados y la orientación bibliotecaria del proyecto fueron definidos por el autor.
-
 
 ## Licencia
 
