@@ -1,0 +1,40 @@
+{
+  "ajustes_derivados": [],
+  "boletines": {
+    "boletin:0000": {
+      "control_complementario": "COMPLETO",
+      "fecha_publicacion": "2099-01-05",
+      "normas": {
+        "id_norma:1": {
+          "categoria_automatica_original": "RELEVANTE",
+          "clave": "id_norma:1",
+          "decision_manual": "RELEVANTE_CONFIRMADA",
+          "id_norma": 1,
+          "id_sdin": "",
+          "motivo_deteccion": [
+            "keyword_sumario: término de ejemplo"
+          ],
+          "nombre": "Disposición N° 1/ORGEJ/99",
+          "observacion_revision": "",
+          "organismo": "Organismo de ejemplo",
+          "poder": "Poder Ejecutivo",
+          "revisado_en": "2099-01-05T10:30:00-03:00",
+          "sumario": "Texto ficticio utilizado para documentar el esquema.",
+          "tipo_norma": "Disposición",
+          "url_norma": "https://example.invalid/norma/1"
+        }
+      },
+      "numero_boletin": "0000",
+      "observaciones": "",
+      "primera_ejecucion": "2099-01-05T10:00:00-03:00",
+      "ultima_ejecucion": "2099-01-05T10:30:00-03:00"
+    }
+  },
+  "observaciones": "",
+  "periodo": {
+    "clave": "2099-W02",
+    "desde": "2099-01-05",
+    "hasta": "2099-01-11"
+  },
+  "schema_version": 1
+}

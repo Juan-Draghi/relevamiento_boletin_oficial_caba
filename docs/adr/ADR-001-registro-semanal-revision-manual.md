@@ -1,6 +1,6 @@
 # ADR-001 - Registro semanal y revisión manual persistente
 
-Estado: aceptado  
+Estado: aceptado; la política de versionado fue sustituida por ADR-003
 Fecha: 2026-07-13
 
 ## Contexto y evidencia
@@ -47,7 +47,7 @@ Los ajustes derivados y sus motivos no se cargan desde la pestaña Indicadores. 
 - Una consulta repetida no vuelve a sumar las mismas normas.
 - La fecha del indicador es la fecha de publicación del ejemplar.
 - La categoría original no cambia al reprocesar un ejemplar.
-- Los JSON son legibles y versionables, pero aumentarán el tamaño del repositorio con el uso.
+- Los JSON son legibles, pero los archivos operativos reales no se versionan junto con el código según ADR-003.
 - No se reconstruyen períodos anteriores sin evidencia.
 - Una futura modificación del esquema requerirá una nueva versión y, si cambia las definiciones, un ADR adicional.
 
@@ -64,3 +64,4 @@ Los ajustes derivados y sus motivos no se cargan desde la pestaña Indicadores. 
 ## Relación con otras decisiones
 
 - [ADR-002 - Indicadores de desempeño y gobernanza de la configuración](ADR-002-indicadores-y-gobernanza-configuracion.md)
+- [ADR-003 - Datos operativos fuera del repositorio de código](ADR-003-datos-operativos-fuera-del-repositorio.md)

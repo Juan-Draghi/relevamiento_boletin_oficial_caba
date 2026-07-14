@@ -109,6 +109,10 @@ El registro conserva:
 
 Una consulta repetida actualiza el mismo ejemplar y no vuelve a sumar sus normas. Los indicadores se calculan desde los registros guardados; no se persisten totales derivados.
 
+Los JSON semanales contienen datos operativos reales y no se versionan en el repositorio de código. Permanecen en el equipo dentro de `data/seguimiento` y deben incluirse en una política de respaldo separada. La sincronización de Google Drive no reemplaza por sí sola ese respaldo.
+
+El archivo versionado `data/seguimiento/ejemplo_seguimiento.json` documenta el esquema con datos ficticios. Los indicadores se recalculan siempre desde los JSON locales reales.
+
 ### Decisiones manuales
 
 - `SIN_REVISAR`: todavía no existe una decisión profesional.
@@ -163,7 +167,7 @@ Contiene:
 - `LISTA_NORMAS_CURADAS`;
 - `LISTA_ORGANISMOS_PRIORIDAD`.
 
-La configuración ya no se edita desde la aplicación. Los cambios deberán realizarse mediante un skill específico y quedar justificados en `docs/seguimiento/log_ajustes.md`. La creación de ese skill corresponde a una etapa posterior del proyecto.
+La configuración ya no se edita desde la aplicación. Los cambios se realizan mediante `$ajustar-keywords-bo-caba`, que exige evidencia, presenta el ajuste exacto antes de aplicarlo, valida la configuración y las pruebas, y registra la justificación en `docs/seguimiento/log_ajustes.md`. Este flujo no genera ADR.
 
 ## Instalación
 
@@ -219,11 +223,11 @@ relevamiento_boletin_oficial_caba/
 │   └── text.py                 # Normalización textual
 ├── config/
 │   └── config_keywords.json    # Parámetros curados
-├── data/seguimiento/           # Registros JSON semanales
+├── data/seguimiento/           # Datos locales y ejemplo de esquema
 ├── desktop_app/
 │   ├── app.py                  # Aplicación Flask y endpoints
 │   ├── static/app.js           # Interacciones de la interfaz
-│   ├── static/styles.css       # Estilos CPAU
+│   ├── static/styles.css       # Estilos de la interfaz
 │   └── templates/index.html    # Estructura de la interfaz
 ├── docs/                       # Documentación, ADR y log
 ├── tests/                      # Pruebas unitarias
@@ -250,6 +254,7 @@ La suite cubre el detector, la persistencia semanal, deduplicación, decisiones 
 - [Log de ajustes derivados](docs/seguimiento/log_ajustes.md)
 - [ADR-001: registro semanal y revisión manual](docs/adr/ADR-001-registro-semanal-revision-manual.md)
 - [ADR-002: indicadores y gobernanza de configuración](docs/adr/ADR-002-indicadores-y-gobernanza-configuracion.md)
+- [ADR-003: datos operativos fuera del repositorio de código](docs/adr/ADR-003-datos-operativos-fuera-del-repositorio.md)
 
 ## Limitaciones
 

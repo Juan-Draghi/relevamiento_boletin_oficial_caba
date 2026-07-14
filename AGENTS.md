@@ -154,8 +154,9 @@ Precauciones:
 - Si se ajusta una regex de `LISTA_NORMAS_CURADAS`, validar que compile.
 - Los patrones de leyes deben contemplar variantes con y sin punto de miles, por ejemplo `6\.?927`.
 - No reintroducir un editor de configuracion en la interfaz.
-- Los cambios de configuracion deben realizarse mediante el skill especifico previsto para ese flujo, con evidencia y motivo registrados en `docs/seguimiento/log_ajustes.md`.
-- Hasta que el skill quede implementado, no modificar la configuracion salvo pedido explicito del usuario.
+- Los cambios de configuracion deben realizarse mediante `$ajustar-keywords-bo-caba`, con evidencia y motivo registrados en `docs/seguimiento/log_ajustes.md`.
+- El skill debe presentar primero una ficha con evidencia, tipo, valor exacto, motivo, impacto y controles; no aplicar el cambio hasta recibir aprobacion explicita de esa propuesta.
+- El skill no debe crear ni modificar ADR. Si el pedido excede keywords, patrones u organismos y requiere cambiar logica o filtros estructurales, debe detenerse e informar que esta fuera de alcance.
 - Los cambios de configuracion deben commitearse cuando responden a un ajuste real de deteccion.
 - La app puede generar backups `config/config_keywords.backup_*.json`; no versionarlos.
 
@@ -184,6 +185,10 @@ Precauciones:
 - No calcular recall ni F1 hasta contar con un universo completamente revisado que permita conocer los falsos negativos de forma defendible.
 - Tratar `data/seguimiento/*.json` como datos reales del usuario: no borrarlos, sobrescribirlos, normalizarlos ni usarlos para pruebas destructivas.
 - Para pruebas manuales o de navegador, usar una copia temporal y verificar su eliminacion al finalizar.
+- No agregar, commitear ni subir a Git los JSON semanales reales de `data/seguimiento`.
+- El unico JSON versionado en ese directorio es `data/seguimiento/ejemplo_seguimiento.json`, que contiene datos ficticios y documenta el esquema.
+- Si un JSON real ya estuviera versionado, retirarlo solo del indice con `git rm --cached`; nunca eliminar el archivo local como parte de esa operacion.
+- La sincronizacion de Google Drive no sustituye una politica de respaldo. Mantener una copia periodica adicional en una ubicacion controlada distinta del directorio de trabajo.
 
 ## Aplicacion de escritorio
 

@@ -72,7 +72,7 @@ La interfaz acompaña cada indicador de desempeño con una descripción breve y 
 
 ## Gobernanza de la configuración
 
-Los ajustes derivados y sus motivos no forman parte de la carga ordinaria ni se editan desde la pestaña Indicadores. Deben registrarse en `docs/seguimiento/log_ajustes.md` y aplicarse mediante el skill específico de configuración previsto para una etapa posterior.
+Los ajustes derivados y sus motivos no forman parte de la carga ordinaria ni se editan desde la pestaña Indicadores. Deben aplicarse mediante `$ajustar-keywords-bo-caba` y registrarse en `docs/seguimiento/log_ajustes.md`. El skill exige aprobación del cambio exacto, validación y pruebas, y no crea ADR.
 
 ## Convenciones
 
@@ -91,7 +91,10 @@ La persistencia utiliza únicamente la biblioteca estándar de Python y archivos
 
 ## Riesgos y controles
 
-- Los archivos JSON forman parte del repositorio y deben revisarse antes de cada commit.
+- Los archivos JSON semanales contienen datos operativos reales y no forman parte del repositorio de código.
+- `data/seguimiento/*.json` está excluido por Git; la única excepción es `ejemplo_seguimiento.json`, que contiene datos ficticios y documenta el esquema.
+- Si un archivo real ya estuviera versionado, se retira solo del índice con `git rm --cached` y se verifica que el archivo local permanezca intacto.
+- La sincronización de Google Drive no reemplaza una política de respaldo; se recomienda una copia periódica adicional en otra ubicación controlada.
 - Una edición manual incorrecta del JSON puede invalidar el archivo; la aplicación valida el esquema al leerlo.
 - Los archivos se escriben primero con extensión temporal y luego se reemplazan, para reducir el riesgo de corrupción.
 - La categoría original y la decisión manual se preservan al repetir una consulta.
@@ -102,3 +105,4 @@ La persistencia utiliza únicamente la biblioteca estándar de Python y archivos
 
 - [ADR-001 - Registro semanal y revisión manual persistente](../adr/ADR-001-registro-semanal-revision-manual.md)
 - [ADR-002 - Indicadores de desempeño y gobernanza de la configuración](../adr/ADR-002-indicadores-y-gobernanza-configuracion.md)
+- [ADR-003 - Datos operativos fuera del repositorio de código](../adr/ADR-003-datos-operativos-fuera-del-repositorio.md)
