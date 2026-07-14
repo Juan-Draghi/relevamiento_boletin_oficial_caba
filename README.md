@@ -250,11 +250,15 @@ La suite cubre el detector, la persistencia semanal, deduplicación, decisiones 
 
 ## Documentación
 
+- [Historial de evolución del detector](docs/historial_evolucion.md)
 - [Registro operativo e indicadores](docs/seguimiento/registro_operativo.md)
 - [Log de ajustes derivados](docs/seguimiento/log_ajustes.md)
 - [ADR-001: registro semanal y revisión manual](docs/adr/ADR-001-registro-semanal-revision-manual.md)
 - [ADR-002: indicadores y gobernanza de configuración](docs/adr/ADR-002-indicadores-y-gobernanza-configuracion.md)
 - [ADR-003: datos operativos fuera del repositorio de código](docs/adr/ADR-003-datos-operativos-fuera-del-repositorio.md)
+- [ADR-004: reglas trazables en lugar de aprendizaje supervisado](docs/adr/ADR-004-reglas-trazables-en-lugar-de-ml-supervisado.md)
+- [ADR-005: pipeline API por capas y revisión humana](docs/adr/ADR-005-pipeline-api-por-capas-y-revision-humana.md)
+- [ADR-006: aplicación local Flask para uso diario](docs/adr/ADR-006-aplicacion-local-flask-para-uso-diario.md)
 
 ## Limitaciones
 

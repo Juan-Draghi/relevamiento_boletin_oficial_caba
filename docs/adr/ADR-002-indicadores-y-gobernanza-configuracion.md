@@ -65,7 +65,7 @@ No calcular recall ni F1 hasta contar con un universo revisado de forma suficien
 - La reducción de lectura mide ahorro operativo, no exactitud semántica.
 - El uso diario permitirá observar tendencias y decidir más adelante si corresponde establecer metas institucionales.
 - La eliminación del editor agrega un paso al ajuste de configuración, pero mejora la auditabilidad.
-- El skill de configuración queda como una etapa posterior y no forma parte de esta implementación.
+- El skill de configuración fue implementado posteriormente como `$ajustar-keywords-bo-caba`; cada ajuste que produzca debe registrarse en el log y no genera un ADR por sí mismo.
 
 ## Riesgos y mitigaciones
 
