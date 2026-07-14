@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Biblioteca CPAU | Relevamiento Boletín Oficial CABA</title>
   <link rel="icon" href="{{ url_for('static', filename='app-icon-ciudad.ico') }}" type="image/x-icon">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
   <div class="app-shell">
     <header class="app-header">
-      <a class="brand" href="/">
-        <img src="{{ url_for('static', filename='biblioteca-logo.png') }}" alt="Biblioteca CPAU">
+      <a class="brand" href="/" aria-label="Biblioteca CPAU">
+        <span class="brand-mark">BO</span>
+        <span>Biblioteca CPAU</span>
       </a>
       <div class="app-badge">Aplicación local</div>
     </header>
@@ -27,75 +27,63 @@
     </nav>
 
     <main>
-      <div data-tab-panel="review">
-        <section class="intro">
-          <p class="section-kicker">Relevamiento BO CABA</p>
-          <h1>Detector de normativa relevante del Boletín Oficial CABA</h1>
-          <p>
-            Consulte el ejemplar, revise las categorías automáticas y registre
-            la decisión profesional sin perder la clasificación original.
-          </p>
-        </section>
+      <section class="message message--{{ message_kind }}" id="message-box" {% if not message %}hidden{% endif %}>
+        <span id="message-text">{{ message }}</span>
+      </section>
 
-        <section class="workspace">
+      <div data-tab-panel="review">
+        <section class="review-workspace">
+          <div class="intro">
+            <p class="section-kicker">Relevamiento BO CABA</p>
+            <h1>Revisión diaria de normativa</h1>
+            <p>
+              Analice un ejemplar, revise las alertas automáticas y registre cada
+              decisión profesional sin perder la clasificación original.
+            </p>
+          </div>
+
           <article class="analysis-card">
             <form method="post" class="analysis-form" id="analysis-form">
               <input id="parametro" name="parametro" type="hidden" value="{{ default_parametro }}">
 
-              <fieldset class="options">
-                <legend>Boletín a analizar</legend>
-                <label class="radio-field">
-                  <input type="radio" name="parametro_mode" value="latest" checked>
-                  Último ejemplar publicado
-                </label>
-                <label class="radio-field radio-field--stacked">
-                  <span>
-                    <input type="radio" name="parametro_mode" value="date">
-                    Fecha específica
-                  </span>
-                  <input id="parametro-date" type="date" aria-label="Fecha del boletín">
-                </label>
-                <label class="radio-field radio-field--stacked">
-                  <span>
-                    <input type="radio" name="parametro_mode" value="advanced">
-                    Parámetro avanzado
-                  </span>
-                  <input
-                    id="parametro-advanced"
-                    type="text"
-                    placeholder="Ejemplo: 7281 o 12-01-2026"
-                    aria-label="Parámetro avanzado"
-                  >
-                </label>
-                <p class="hint">
-                  La fecha del registro se toma automáticamente del ejemplar publicado.
-                </p>
-              </fieldset>
+              <div class="analysis-card__heading">
+                <strong>Boletín a analizar</strong>
+                <span>La fecha del registro se toma del ejemplar</span>
+              </div>
 
-              <button type="submit" id="analysis-submit">Analizar boletín</button>
+              <fieldset class="options">
+                <legend class="sr-only">Modo de consulta</legend>
+                <div class="query-modes">
+                  <label class="radio-field">
+                    <input type="radio" name="parametro_mode" value="latest" checked>
+                    <span>Último publicado</span>
+                  </label>
+                  <label class="radio-field">
+                    <input type="radio" name="parametro_mode" value="date">
+                    <span>Fecha específica</span>
+                  </label>
+                  <label class="radio-field">
+                    <input type="radio" name="parametro_mode" value="advanced">
+                    <span>Parámetro avanzado</span>
+                  </label>
+                </div>
+
+                <div class="analysis-actions">
+                  <div class="query-fields">
+                    <input id="parametro-date" class="query-field query-field--date" type="date" aria-label="Fecha del boletín">
+                    <input
+                      id="parametro-advanced"
+                      class="query-field query-field--advanced"
+                      type="text"
+                      placeholder="Ejemplo: 7281 o 12-01-2026"
+                      aria-label="Parámetro avanzado"
+                    >
+                  </div>
+                  <button type="submit" id="analysis-submit">Analizar boletín</button>
+                </div>
+              </fieldset>
             </form>
           </article>
-
-          <aside class="notes-card">
-            <h2>Configuración activa</h2>
-            {% if config_summary %}
-              <dl class="config-list">
-                <div><dt>Keywords</dt><dd>{{ config_summary.keywords }}</dd></div>
-                <div><dt>Keywords condicionales</dt><dd>{{ config_summary.keywords_condicionales }}</dd></div>
-                <div><dt>Normas curadas</dt><dd>{{ config_summary.normas_curadas }}</dd></div>
-                <div><dt>Organismos prioritarios</dt><dd>{{ config_summary.organismos_prioridad }}</dd></div>
-              </dl>
-              <p class="notes-meta">
-                Información de solo lectura. La configuración ya no se edita desde la aplicación.
-              </p>
-            {% else %}
-              <p>No se pudo cargar la configuración.</p>
-            {% endif %}
-          </aside>
-        </section>
-
-        <section class="message message--{{ message_kind }}" id="message-box" {% if not message %}hidden{% endif %}>
-          <span id="message-text">{{ message }}</span>
         </section>
 
         <section class="progress-panel" id="progress-panel" hidden>
@@ -103,19 +91,14 @@
             <p class="section-kicker">Progreso</p>
             <strong id="progress-percent">0%</strong>
           </div>
-          <div class="progress-bar">
-            <div class="progress-bar__fill" id="progress-bar-fill"></div>
-          </div>
+          <div class="progress-bar"><div class="progress-bar__fill" id="progress-bar-fill"></div></div>
           <p class="progress-panel__message" id="progress-message">Preparando análisis...</p>
         </section>
 
-        <section class="summary-panel" id="summary-panel" hidden>
-          <div class="results-header">
-            <div>
-              <p class="section-kicker">Síntesis automática</p>
-              <h2>Resultado del boletín</h2>
-            </div>
-            <span id="boletin-label">BO</span>
+        <section class="summary-panel" id="summary-panel" hidden aria-label="Síntesis del boletín">
+          <div class="summary-title">
+            <span>Ejemplar</span>
+            <strong id="boletin-label">BO</strong>
           </div>
           <div class="metric-grid" id="metric-grid"></div>
         </section>
@@ -124,36 +107,13 @@
           <div class="results-header">
             <div>
               <p class="section-kicker">Resultados principales</p>
-              <div class="results-title-line">
-                <h2>Relevantes y revisión manual</h2>
-                <span class="results-count" id="results-count">0 normas</span>
-              </div>
+              <h2>Relevantes y revisión manual</h2>
+              <p class="section-description">Primero se muestran las normas que requieren una decisión profesional.</p>
             </div>
+            <span class="results-count" id="results-count">0 normas</span>
           </div>
 
-          <div class="table-wrap">
-            <table class="results-table">
-              <colgroup>
-                <col class="results-table__category">
-                <col class="results-table__norm">
-                <col class="results-table__agency">
-                <col class="results-table__summary">
-                <col class="results-table__decision">
-                <col class="results-table__links">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>Categoría automática</th>
-                  <th>Norma</th>
-                  <th>Organismo</th>
-                  <th>Sumario y motivo</th>
-                  <th>Decisión manual</th>
-                  <th>Enlaces</th>
-                </tr>
-              </thead>
-              <tbody id="primary-results-body"></tbody>
-            </table>
-          </div>
+          <div class="review-list" id="primary-results-body"></div>
 
           <div class="secondary-results">
             <details class="result-accordion">
@@ -161,32 +121,12 @@
                 <span>Normas no relevantes (<strong id="no-relevant-count">0</strong>)</span>
                 <span class="accordion-status" id="no-relevant-fn">0 falsos negativos</span>
               </summary>
-              <div class="accordion-tools">
-                <label for="no-relevant-search">Buscar por norma, organismo o sumario</label>
-                <input id="no-relevant-search" type="search" data-accordion-search="no-relevant-body" placeholder="Buscar dentro de NO_RELEVANTE">
-              </div>
-              <div class="table-wrap">
-                <table class="results-table">
-                  <colgroup>
-                    <col class="results-table__category">
-                    <col class="results-table__norm">
-                    <col class="results-table__agency">
-                    <col class="results-table__summary">
-                    <col class="results-table__decision">
-                    <col class="results-table__links">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Categoría automática</th>
-                      <th>Norma</th>
-                      <th>Organismo</th>
-                      <th>Sumario y motivo</th>
-                      <th>Registrar falso negativo</th>
-                      <th>Enlaces</th>
-                    </tr>
-                  </thead>
-                  <tbody id="no-relevant-body"></tbody>
-                </table>
+              <div class="accordion-content">
+                <div class="accordion-tools">
+                  <label for="no-relevant-search">Buscar por norma, organismo o sumario</label>
+                  <input id="no-relevant-search" type="search" data-accordion-search="no-relevant-body" placeholder="Buscar dentro de NO_RELEVANTE">
+                </div>
+                <div class="review-list review-list--secondary" id="no-relevant-body"></div>
               </div>
             </details>
 
@@ -195,64 +135,34 @@
                 <span>Descartadas por filtro estructural (<strong id="discarded-count">0</strong>)</span>
                 <span class="accordion-status" id="discarded-fn">0 falsos negativos</span>
               </summary>
-              <div class="accordion-tools">
-                <label for="discarded-search">Buscar por norma, organismo o sumario</label>
-                <input id="discarded-search" type="search" data-accordion-search="discarded-body" placeholder="Buscar dentro de las descartadas">
-              </div>
-              <div class="table-wrap">
-                <table class="results-table">
-                  <colgroup>
-                    <col class="results-table__category">
-                    <col class="results-table__norm">
-                    <col class="results-table__agency">
-                    <col class="results-table__summary">
-                    <col class="results-table__decision">
-                    <col class="results-table__links">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Categoría automática</th>
-                      <th>Norma</th>
-                      <th>Organismo</th>
-                      <th>Sumario y motivo</th>
-                      <th>Registrar falso negativo</th>
-                      <th>Enlaces</th>
-                    </tr>
-                  </thead>
-                  <tbody id="discarded-body"></tbody>
-                </table>
+              <div class="accordion-content">
+                <div class="accordion-tools">
+                  <label for="discarded-search">Buscar por norma, organismo o sumario</label>
+                  <input id="discarded-search" type="search" data-accordion-search="discarded-body" placeholder="Buscar dentro de las descartadas">
+                </div>
+                <div class="review-list review-list--secondary" id="discarded-body"></div>
               </div>
             </details>
           </div>
         </section>
 
         <section class="bulletin-review" id="bulletin-review-panel" hidden>
-          <div class="results-header">
-            <div>
-              <p class="section-kicker">Cierre del ejemplar</p>
-              <h2>Control complementario</h2>
-            </div>
+          <div>
+            <p class="section-kicker">Cierre del ejemplar</p>
+            <h2>Control complementario</h2>
+            <p class="section-description">Estado global de la revisión profesional del ejemplar.</p>
           </div>
           <form id="bulletin-review-form" class="review-form review-form--compact">
             <fieldset class="decision-fieldset">
-              <legend>Estado de la revisión profesional</legend>
+              <legend class="sr-only">Estado de la revisión profesional</legend>
               <div class="decision-options decision-options--horizontal" id="bulletin-control">
-                <label class="decision-choice">
-                  <input type="checkbox" value="PENDIENTE">
-                  <span>Pendiente</span>
-                </label>
-                <label class="decision-choice">
-                  <input type="checkbox" value="PARCIAL">
-                  <span>Parcial</span>
-                </label>
-                <label class="decision-choice">
-                  <input type="checkbox" value="COMPLETO">
-                  <span>Completo</span>
-                </label>
+                <label class="decision-choice"><input type="checkbox" value="PENDIENTE"><span>Pendiente</span></label>
+                <label class="decision-choice"><input type="checkbox" value="PARCIAL"><span>Parcial</span></label>
+                <label class="decision-choice"><input type="checkbox" value="COMPLETO"><span>Completo</span></label>
               </div>
             </fieldset>
             <div class="review-save-block">
-              <button type="submit">Guardar control complementario</button>
+              <button type="submit">Guardar control</button>
               <span class="save-status" id="bulletin-save-status" aria-live="polite"></span>
             </div>
           </form>
@@ -260,16 +170,17 @@
       </div>
 
       <div data-tab-panel="indicators" hidden>
-        <section class="intro">
-          <p class="section-kicker">Seguimiento operativo</p>
-          <h1>Indicadores semanales</h1>
-          <p>Los valores se calculan desde los registros JSON guardados por la aplicación.</p>
-        </section>
-
-        <section class="indicator-toolbar">
-          <label for="indicator-week">Semana</label>
-          <select id="indicator-week"></select>
-          <strong id="indicator-period"></strong>
+        <section class="indicators-heading">
+          <div class="intro">
+            <p class="section-kicker">Seguimiento operativo</p>
+            <h1>Desempeño del relevamiento</h1>
+            <p>Indicadores calculados a partir de las decisiones profesionales guardadas.</p>
+          </div>
+          <div class="indicator-toolbar">
+            <label for="indicator-week">Semana</label>
+            <select id="indicator-week"></select>
+            <strong id="indicator-period"></strong>
+          </div>
         </section>
 
         <section class="indicator-section" aria-labelledby="volume-heading">
@@ -289,30 +200,17 @@
           <div class="metric-grid metric-grid--performance" id="indicator-performance-grid"></div>
         </section>
 
-        <section class="results indicator-bulletins">
+        <section class="indicator-bulletins">
           <div class="results-header">
-            <div>
-              <p class="section-kicker">Trazabilidad</p>
-              <h2>Boletines computados</h2>
-            </div>
+            <div><p class="section-kicker">Trazabilidad</p><h2>Boletines computados</h2></div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Boletín</th>
-                  <th>Fecha</th>
-                  <th>Normas procesadas</th>
-                  <th>Relevantes confirmadas</th>
-                  <th>Falsos negativos</th>
-                  <th>Control</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Boletín</th><th>Fecha</th><th>Normas procesadas</th><th>Relevantes confirmadas</th><th>Falsos negativos</th><th>Control</th></tr></thead>
               <tbody id="indicator-bulletins-body"></tbody>
             </table>
           </div>
         </section>
-
       </div>
     </main>
 

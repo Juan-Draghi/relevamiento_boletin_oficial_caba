@@ -170,7 +170,7 @@ function resultRow(result, hiddenCategory = false) {
   const links = [
     result.url_norma ? `<a href="${escapeHtml(result.url_norma)}" target="_blank" rel="noopener">Texto oficial</a>` : "",
     anexos,
-  ].filter(Boolean).join("<br>");
+  ].filter(Boolean).join("");
   const searchable = [
     result.nombre,
     result.organismo,
@@ -180,22 +180,26 @@ function resultRow(result, hiddenCategory = false) {
   const falseNegative = hiddenCategory && result.decision_manual === "RELEVANTE_CONFIRMADA";
 
   return `
-    <tr data-result-key="${escapeHtml(result.clave_registro)}" data-search="${escapeHtml(searchable)}" class="${falseNegative ? "row--false-negative" : ""}">
-      <td>
-        <span class="category-badge category-${escapeHtml(result.categoria_automatica_original)}">
-          ${escapeHtml(result.categoria_original_label)}
-        </span>
-      </td>
-      <td>
-        <strong>${escapeHtml(result.nombre)}</strong>
-        <small>${escapeHtml(result.poder)} / ${escapeHtml(result.tipo_norma)}</small>
-      </td>
-      <td>${escapeHtml(result.organismo)}</td>
-      <td>
-        <p class="sumario">${escapeHtml(result.sumario)}</p>
-        <p class="motivo">${escapeHtml(result.motivo_label || "Sin motivo informado")}</p>
-      </td>
-      <td class="review-cell">
+    <article data-result-key="${escapeHtml(result.clave_registro)}" data-search="${escapeHtml(searchable)}" class="review-card ${falseNegative ? "review-card--false-negative" : ""}">
+      <div class="norm-content">
+        <div class="norm-top">
+          <span class="category-badge category-${escapeHtml(result.categoria_automatica_original)}">
+            ${escapeHtml(result.categoria_original_label)}
+          </span>
+          <div class="norm-heading">
+            <strong>${escapeHtml(result.nombre)}</strong>
+            <small>${escapeHtml(result.poder)} / ${escapeHtml(result.tipo_norma)}</small>
+          </div>
+          <span class="agency">${escapeHtml(result.organismo)}</span>
+          <div class="links-cell">${links || "<span>Sin enlace</span>"}</div>
+        </div>
+        <div class="norm-detail">
+          <p class="sumario">${escapeHtml(result.sumario)}</p>
+          <p class="motivo"><strong>Detección:</strong> ${escapeHtml(result.motivo_label || "Sin motivo informado")}</p>
+        </div>
+      </div>
+      <div class="review-cell">
+        <span class="decision-label">Decisión profesional</span>
         <div class="decision-options">
           ${decisionChoices(result, hiddenCategory)}
         </div>
@@ -206,15 +210,14 @@ function resultRow(result, hiddenCategory = false) {
         </label>` : ""}
         <button type="button" class="button-secondary save-review">Guardar decisión</button>
         <small class="save-status" aria-live="polite"></small>
-      </td>
-      <td class="links-cell">${links || "<span>Sin enlace</span>"}</td>
-    </tr>
+      </div>
+    </article>
   `;
 }
 
 function renderCategoryBody(body, results, hiddenCategory) {
   if (!results.length) {
-    body.innerHTML = '<tr><td colspan="6" class="empty-state">No hay registros en esta categoría.</td></tr>';
+    body.innerHTML = '<p class="empty-state">No hay registros en esta categoría.</p>';
     return;
   }
   body.innerHTML = results.map((result) => resultRow(result, hiddenCategory)).join("");
@@ -293,7 +296,7 @@ async function saveNormReview(button) {
     const result = currentAnalysis.results.find((item) => item.clave_registro === key);
     result.decision_manual = payload.decision_manual;
     result.observacion_revision = payload.observacion_revision;
-    row.classList.toggle("row--false-negative", payload.es_falso_negativo);
+    row.classList.toggle("review-card--false-negative", payload.es_falso_negativo);
     updateFalseNegativeBadges(currentAnalysis.results);
     status.classList.remove("save-status--error");
     status.textContent = payload.es_falso_negativo ? "Falso negativo registrado." : "Decisión guardada.";
@@ -503,7 +506,7 @@ document.querySelectorAll("[data-accordion-search]").forEach((input) => {
   input.addEventListener("input", () => {
     const query = input.value.trim().toLocaleLowerCase("es");
     const body = document.getElementById(input.dataset.accordionSearch);
-    body.querySelectorAll("tr[data-search]").forEach((row) => {
+    body.querySelectorAll("[data-search]").forEach((row) => {
       row.hidden = Boolean(query) && !row.dataset.search.includes(query);
     });
   });
