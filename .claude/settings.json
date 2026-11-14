@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m unittest discover -s tests)",
+      "Bash(python .claude/skills/ajustar-keywords-bo-caba/scripts/validate_detector_config.py .)",
+      "Bash(git status -sb)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Edit(/data/seguimiento/20*.json)",
+      "Write(/data/seguimiento/20*.json)"
+    ]
+  }
+}

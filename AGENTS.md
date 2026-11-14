@@ -154,7 +154,7 @@ Precauciones:
 - Si se ajusta una regex de `LISTA_NORMAS_CURADAS`, validar que compile.
 - Los patrones de leyes deben contemplar variantes con y sin punto de miles, por ejemplo `6\.?927`.
 - No reintroducir un editor de configuracion en la interfaz.
-- Los cambios de configuracion deben realizarse mediante `$ajustar-keywords-bo-caba`, con evidencia y motivo registrados en `docs/seguimiento/log_ajustes.md`.
+- Los cambios de configuracion deben realizarse mediante el skill `ajustar-keywords-bo-caba` (`/ajustar-keywords-bo-caba` en Claude Code, `$ajustar-keywords-bo-caba` en Codex), con evidencia y motivo registrados en `docs/seguimiento/log_ajustes.md`.
 - El skill debe presentar primero una ficha con evidencia, tipo, valor exacto, motivo, impacto y controles; no aplicar el cambio hasta recibir aprobacion explicita de esa propuesta.
 - El skill no debe crear ni modificar ADR. Si el pedido excede keywords, patrones u organismos y requiere cambiar logica o filtros estructurales, debe detenerse e informar que esta fuera de alcance.
 - Los cambios de configuracion deben commitearse cuando responden a un ajuste real de deteccion.

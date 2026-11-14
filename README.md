@@ -167,7 +167,7 @@ Contiene:
 - `LISTA_NORMAS_CURADAS`;
 - `LISTA_ORGANISMOS_PRIORIDAD`.
 
-La configuración ya no se edita desde la aplicación. Los cambios se realizan mediante `$ajustar-keywords-bo-caba`, que exige evidencia, presenta el ajuste exacto antes de aplicarlo, valida la configuración y las pruebas, y registra la justificación en `docs/seguimiento/log_ajustes.md`. Este flujo no genera ADR.
+La configuración ya no se edita desde la aplicación. Los cambios se realizan mediante el skill `ajustar-keywords-bo-caba` (versionado en `.claude/skills/`; se invoca como `/ajustar-keywords-bo-caba` en Claude Code o `$ajustar-keywords-bo-caba` en Codex), que exige evidencia, presenta el ajuste exacto antes de aplicarlo, valida la configuración y las pruebas, y registra la justificación en `docs/seguimiento/log_ajustes.md`. Este flujo no genera ADR.
 
 ## Instalación
 
