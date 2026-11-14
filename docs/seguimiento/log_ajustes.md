@@ -302,7 +302,7 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 **Referencias**
 
 - Issue: no corresponde.
-- Commit: `ccbe041` (cambio de configuración); registro y prueba: pendiente.
+- Commit: `ccbe041` (cambio de configuración); `369330a` (registro y prueba).
 - ADR: no corresponde.
 
 **Revisar resultado**
