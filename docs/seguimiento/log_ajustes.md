@@ -260,6 +260,56 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 - Período: uso diario desde `2026-W29`.
 - Resultado: pendiente.
 
+## LOG-2026-11-05 - Agregar norma curada Resolución 227/SECGDU/26
+
+> Registro retroactivo, documentado el 2026-11-14. El cambio de configuración se aplicó el 2026-11-05 en el commit `ccbe041` sin entrada en este log.
+
+**Evidencia**
+
+- Período o ejemplar: BO 7460 (2026-09-24) y BO 7489 (2026-11-05).
+- Norma o conjunto de casos: Resolución N° 227/SECGDU/26, que establece que toda documentación que requiera la firma de profesionales intervinientes presentada ante las Direcciones Generales de la Secretaría deberá suscribirse mediante firma digital; y Resolución N° 252/SECGDU/26, cuyo sumario es "Prorroga la entrada en vigencia de la Resolución N° 227-SECGDU/26".
+- Categoría obtenida y decisión profesional: ambas `REVISION_MANUAL` (`sumario_opaco_patron`, `organismo_prioritario: SECGDU`), confirmadas como `RELEVANTE_CONFIRMADA`.
+- Resultado observado: los actos vinculados con la Resolución 227/SECGDU/26 sólo se detectaban por la vía indirecta de revisión manual.
+
+**Problema detectado**
+
+- Tipo: variante no cubierta.
+- Descripción: una norma confirmada como relevante no estaba bajo seguimiento directo. Sus prórrogas o modificaciones dependían de que el sumario resultara opaco y de que interviniera un organismo prioritario.
+
+**Cambio realizado**
+
+- Archivo o parámetro: `config/config_keywords.json` — `LISTA_NORMAS_CURADAS`.
+- Operación: agregar.
+- Valor anterior: no corresponde.
+- Valor nuevo: `[Rr]esoluci[oó]n(?: [Nn]°?)? ?227(?:[-/]?GCABA)?[-/]?SECGDU[-/]?26`.
+- Modificación: incorporación del patrón; contempla `N°` opcional, guion o barra, `GCABA` opcional y la sigla del organismo con el año.
+
+**Motivo de incorporación o modificación**
+
+- Justificación: la firma digital obligatoria de la documentación profesional presentada ante la Secretaría afecta directamente el ejercicio profesional de arquitectura y urbanismo. Corresponde seguir la norma y sus actos modificatorios o de prórroga.
+
+**Validación**
+
+- Prueba específica: `test_curated_resolution_227_secgdu_26_matches_real_variants` (sumario real de la Resolución 252/SECGDU/26 y dos variantes de grafía) y `test_curated_resolution_227_secgdu_26_does_not_match_neighbors` (228-SECGDU/26, 1227-SECGDU/26 y 227-SECGDU/25) en `tests/test_classifier.py`.
+- Suite completa: `python -m unittest discover -s tests`, 41 pruebas; validador de configuración del skill.
+- Resultado: favorable; configuración válida y todas las pruebas superadas.
+
+**Efecto esperado**
+
+- Resultado esperado: toda norma cuyo sumario cite la Resolución 227/SECGDU/26 se clasifica como `RELEVANTE` por `referencia_norma_curada`.
+- Riesgo o efecto colateral observado: no se observó sobrecaptura; números y años vecinos no coinciden. Limitación: el patrón sólo actúa cuando el número de la resolución figura en el sumario.
+
+**Referencias**
+
+- Issue: no corresponde.
+- Commit: `ccbe041` (cambio de configuración); registro y prueba: pendiente.
+- ADR: no corresponde.
+
+**Revisar resultado**
+
+- Período: próxima norma que cite la Resolución 227/SECGDU/26.
+- Resultado: pendiente.
+
 ## Plantilla
 
 ## LOG-AAAA-MM-DD - Título del ajuste

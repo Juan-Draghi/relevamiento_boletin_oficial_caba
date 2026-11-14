@@ -54,6 +54,52 @@ class ClassifierTests(unittest.TestCase):
             result.motivo_deteccion,
         )
 
+    def test_curated_resolution_227_secgdu_26_matches_real_variants(self):
+        # Caso real: Resolucion N° 252/SECGDU/26, BO 7489 (2026-11-05).
+        expected_motivo = (
+            "referencia_norma_curada: "
+            "[Rr]esoluci[oó]n(?: [Nn]°?)? ?227(?:[-/]?GCABA)?[-/]?SECGDU[-/]?26"
+        )
+        sumarios = [
+            "Prorroga la entrada en vigencia de la Resolución N° 227-SECGDU/26",
+            "Modifica la Resolución N° 227/SECGDU/26",
+            "Modifica la Resolucion 227/GCABA/SECGDU/26",
+        ]
+        for sumario in sumarios:
+            with self.subTest(sumario=sumario):
+                result = classify_norma(
+                    {
+                        "poder": "Poder Ejecutivo",
+                        "tipo_norma": "Resolución",
+                        "sumario": sumario,
+                        "organismo": "Otro organismo",
+                    },
+                    self.config,
+                )
+                self.assertEqual(result.categoria_salida, RELEVANTE)
+                self.assertIn(expected_motivo, result.motivo_deteccion)
+
+    def test_curated_resolution_227_secgdu_26_does_not_match_neighbors(self):
+        sumarios = [
+            "Modifica la Resolución N° 228-SECGDU/26",
+            "Modifica la Resolución N° 1227-SECGDU/26",
+            "Modifica la Resolución N° 227-SECGDU/25",
+        ]
+        for sumario in sumarios:
+            with self.subTest(sumario=sumario):
+                result = classify_norma(
+                    {
+                        "poder": "Poder Ejecutivo",
+                        "tipo_norma": "Resolución",
+                        "sumario": sumario,
+                        "organismo": "Otro organismo",
+                    },
+                    self.config,
+                )
+                self.assertFalse(
+                    any("227" in m for m in result.motivo_deteccion if m.startswith("referencia_norma_curada:"))
+                )
+
     def test_priority_organism_alone_is_not_manual_review(self):
         result = classify_norma(
             {
