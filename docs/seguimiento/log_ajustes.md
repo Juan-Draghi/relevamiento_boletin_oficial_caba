@@ -416,6 +416,63 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 **Referencias**
 
 - Issue: no corresponde.
+- Commit: `5fdd2dd`.
+- ADR: no corresponde.
+
+**Revisar resultado**
+
+- Período: boletines posteriores al 2026-11-16; revisar el término en el informe por término de enero de 2027.
+- Resultado: pendiente.
+
+## LOG-2026-11-16 - Convertir «habilitación» en keyword condicional
+
+**Evidencia**
+
+- Período o ejemplar: 2026-07-13 a 2026-11-06, 84 boletines; informe `data/informes_estrategias/20261116_182711_terminos.md`.
+- Norma o conjunto de casos: 128 normas con "habilitación" en el sumario: DGSPCB, habilitaciones y renovaciones de seguridad privada (111); AGC, recursos jerárquicos contra rechazos de habilitación comercial de inmuebles concretos (9); DGSVI, habilitaciones de enseñanza de conducción y vehículos (7); SAISSP, curso de capacitación (1). Ejemplo: Disposición N° 191/DGSPCB/26 (BO 7409).
+- Categoría obtenida y decisión profesional: `RELEVANTE` por `keyword_sumario: habilitación`; las 128 confirmadas como `NO_RELEVANTE_CONFIRMADA`.
+- Resultado observado: 0 relevantes en 128 casos evaluados; tasa máxima de relevantes 3/128 = 2,3 %. Cumple el criterio de evidencia mínima (`docs/seguimiento/criterio_evidencia_keywords.md`).
+
+**Problema detectado**
+
+- Tipo: falso positivo.
+- Descripción: la keyword directa es la que más alertas irrelevantes genera; selecciona actos individuales sobre empresas, personas o inmuebles.
+
+**Cambio realizado**
+
+- Archivo o parámetro: `config/config_keywords.json` — `KEYWORDS_REQUIEREN_ACCION_NORMATIVA`.
+- Operación: agregar.
+- Valor anterior: no corresponde (el término se conserva en `KEYWORDS`).
+- Valor nuevo: `habilitación`.
+- Modificación: la keyword pasa de directa a condicional; insertada en orden alfabético después de "espacio público".
+
+**Motivo de incorporación o modificación**
+
+- Justificación: se eligió la opción intermedia del criterio de evidencia en lugar de eliminar el término, con el mismo efecto medido. Como condicional conserva normas generales con verbo de acción y contexto normativo (por ejemplo, un procedimiento de habilitación). La cobertura temática se complementa con "código de habilitaciones", "código de habilitaciones y verificaciones" y "habilitación económica", que no cambian.
+
+**Comparación previa**
+
+- Período y base: 2026-07-13 a 2026-11-06, 84 boletines, 27113 normas; configuración vigente ya con «consulta obligatoria» condicional.
+- Informe: `data/informes_estrategias/20261116_184216_comparacion.md` (no versionado); alternativa de eliminación en `20261116_184231_comparacion.md` (mismo resultado).
+- Relevantes recuperadas / perdidas: 0 / 0 de 13.
+- Irrelevantes evitadas / añadidas (decisión + lectura completa): 126 de 455 (27,7 %) / 0 de 26645.
+- Sin información afectadas: 0.
+- Siguen seleccionadas por otra regla: Resoluciones N° 350 y 370/AGC/26 (por "redistribución de usos").
+
+**Validación**
+
+- Prueba específica: `test_individual_private_security_habilitacion_is_not_relevant` (sumario real de la Disposición N° 191/DGSPCB/26) y `test_habilitacion_procedure_is_relevant_by_conditional_keyword` (sumario hipotético de procedimiento general) en `tests/test_classifier.py`.
+- Suite completa: `python -m unittest discover -s tests`, 82 pruebas; validador de configuración del skill.
+- Resultado: favorable; configuración válida y todas las pruebas superadas.
+
+**Efecto esperado**
+
+- Resultado esperado: las habilitaciones individuales y los recursos sobre inmuebles concretos dejan de llegar a la lista principal; las normas generales sobre habilitaciones siguen como `RELEVANTE`.
+- Riesgo o efecto colateral observado: un acto individual con verbo de acción que cite otra norma seguiría seleccionado. Una norma general redactada sin verbo de acción ni vocabulario normativo reconocido no se detectaría por esta vía.
+
+**Referencias**
+
+- Issue: no corresponde.
 - Commit: pendiente.
 - ADR: no corresponde.
 
