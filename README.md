@@ -84,7 +84,7 @@ La aplicación Flask está pensada para el uso diario en Windows. Permite:
 - revisar las normas `RELEVANTE` y `REVISION_MANUAL`;
 - guardar una decisión profesional por norma mediante casillas de selección;
 - desplegar `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` únicamente para registrar posibles falsos negativos;
-- indicar si el control complementario está pendiente, parcial o completo;
+- indicar si el control complementario está pendiente, parcial o completo; al marcarlo como completo, la aplicación avisa si quedan alertas sin decisión;
 - consultar volumen operativo e indicadores de desempeño en una pestaña separada;
 - consultar un resumen de la configuración en modo de solo lectura.
 
@@ -121,9 +121,11 @@ El archivo versionado `data/seguimiento/ejemplo_seguimiento.json` documenta el e
 
 Un caso de `REVISION_MANUAL` confirmado como relevante no es un falso negativo. Sólo son falsos negativos las normas originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` luego confirmadas como relevantes.
 
-## Indicadores semanales
+## Indicadores semanales y por período
 
-La pestaña Indicadores separa dos grupos.
+La pestaña Indicadores permite consultar una semana o un período de fechas (desde/hasta, o todo el histórico). En un período, cada norma se cuenta una sola vez aunque se haya publicado en varios boletines, y los porcentajes se calculan sobre los totales del período, sin promediar semanas. Si el período no tiene registros, se informa así en lugar de mostrar ceros.
+
+La pestaña separa dos grupos.
 
 ### Volumen operativo
 

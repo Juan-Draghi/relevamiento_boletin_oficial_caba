@@ -166,6 +166,14 @@
               <span class="save-status" id="bulletin-save-status" aria-live="polite"></span>
             </div>
           </form>
+          <div class="pending-warning" id="pending-warning" role="alert" hidden>
+            <p class="pending-warning__title" id="pending-warning-title"></p>
+            <ul class="pending-warning__list" id="pending-warning-list"></ul>
+            <div class="pending-warning__actions">
+              <button type="button" class="button-secondary" id="pending-review-again">Volver a revisar</button>
+              <button type="button" class="button-secondary button-secondary--warning" id="pending-save-anyway">Guardar igual como completo</button>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -177,11 +185,29 @@
             <p>Indicadores calculados a partir de las decisiones profesionales guardadas.</p>
           </div>
           <div class="indicator-toolbar">
-            <label for="indicator-week">Semana</label>
-            <select id="indicator-week"></select>
+            <div class="indicator-mode" role="radiogroup" aria-label="Alcance de los indicadores">
+              <label><input type="radio" name="indicator_mode" value="week" checked> Semana</label>
+              <label><input type="radio" name="indicator_mode" value="period"> Período</label>
+            </div>
+            <div class="indicator-scope" id="indicator-week-scope">
+              <label for="indicator-week">Semana</label>
+              <select id="indicator-week"></select>
+            </div>
+            <form class="indicator-scope indicator-period-form" id="indicator-period-form" hidden>
+              <label for="indicator-start">Desde</label>
+              <input type="date" id="indicator-start" required>
+              <label for="indicator-end">Hasta</label>
+              <input type="date" id="indicator-end" required>
+              <div class="indicator-period-actions">
+                <button type="submit">Consultar</button>
+                <button type="button" class="button-secondary" id="indicator-all-history">Todo el histórico</button>
+              </div>
+            </form>
             <strong id="indicator-period"></strong>
           </div>
         </section>
+
+        <div class="coverage-notice" id="indicator-coverage" role="status" hidden></div>
 
         <section class="indicator-section" aria-labelledby="volume-heading">
           <div class="indicator-section__header">
@@ -210,6 +236,7 @@
               <tbody id="indicator-bulletins-body"></tbody>
             </table>
           </div>
+          <p class="table-note">Cada fila muestra lo publicado en ese boletín. En los totales, una norma que se repite en varios boletines se cuenta una sola vez.</p>
         </section>
       </div>
     </main>

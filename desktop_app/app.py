@@ -32,9 +32,12 @@ from bo_detector.pipeline import classify_records
 from bo_detector.text import normalize_text
 
 from bo_detector.review_store import (
+    calculate_period_indicators,
     calculate_week_indicators,
+    data_date_range,
     list_week_keys,
     load_week,
+    normalize_publication_date,
     record_key,
     update_bulletin_review,
     update_norm_review,
@@ -435,13 +438,29 @@ def api_save_config():
 def api_indicator_weeks():
     current_week = week_key_for_date(datetime.now().date())
     weeks = sorted(set(list_week_keys(REVIEW_DATA_DIR) + [current_week]), reverse=True)
-    return jsonify({"weeks": weeks, "current_week": current_week})
+    try:
+        data_range = data_date_range(REVIEW_DATA_DIR)
+    except (ValueError, OSError):
+        data_range = None
+    return jsonify({"weeks": weeks, "current_week": current_week, "rango_datos": data_range})
 
 
 @app.get("/api/indicators")
 def api_indicators():
-    week_key = (request.args.get("week") or week_key_for_date(datetime.now().date())).strip()
+    start_text = (request.args.get("desde") or "").strip()
+    end_text = (request.args.get("hasta") or "").strip()
     try:
+        if start_text or end_text:
+            if not (start_text and end_text):
+                raise ValueError("Indique fecha inicial y fecha final del periodo.")
+            return jsonify(
+                calculate_period_indicators(
+                    REVIEW_DATA_DIR,
+                    normalize_publication_date(start_text),
+                    normalize_publication_date(end_text),
+                )
+            )
+        week_key = (request.args.get("week") or week_key_for_date(datetime.now().date())).strip()
         return jsonify(calculate_week_indicators(load_week(REVIEW_DATA_DIR, week_key)))
     except (ValueError, OSError) as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
@@ -474,8 +493,9 @@ def api_update_bulletin_review():
             str(payload.get("boletin_clave") or ""),
             str(payload.get("control_complementario") or ""),
             str(payload.get("observaciones") or ""),
+            confirm_pending=payload.get("confirmar_pendientes") is True,
         )
-        return jsonify({"status": "ok", **result})
+        return jsonify({"status": "ok" if result["guardado"] else "pendientes", **result})
     except (ValueError, OSError) as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
 

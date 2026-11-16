@@ -170,9 +170,11 @@ Precauciones:
 - Un falso negativo es una norma originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` confirmada como relevante. Requiere una evidencia breve.
 - Un caso `REVISION_MANUAL` confirmado como relevante no es un falso negativo.
 - El control complementario admite `PENDIENTE`, `PARCIAL` y `COMPLETO`; la interfaz debe confirmar visualmente el guardado.
+- Al marcar `COMPLETO`, si quedan normas `RELEVANTE` o `REVISION_MANUAL` en `SIN_REVISAR`, no guardar sin antes mostrar la lista de pendientes; el usuario puede volver a revisar o guardar igual. Las categorias de los acordeones no generan aviso.
 - No agregar observaciones opcionales a las decisiones ordinarias ni al cierre del ejemplar.
 - La fecha del registro se toma del ejemplar, no del reloj de ejecucion.
 - Los indicadores se calculan desde los JSON guardados; no persistir totales derivados.
+- Los indicadores pueden consultarse por semana o por rango de fechas de publicacion. En un rango, cada norma se cuenta una sola vez (primera aparicion) y los porcentajes se calculan sobre los totales del rango, nunca promediando semanas. Un rango sin boletines se informa como sin registros, no como cero.
 - Mantener separados el volumen operativo y los indicadores de desempeno.
 - Definiciones vigentes:
   - cobertura de validacion = decisiones registradas / total procesado;

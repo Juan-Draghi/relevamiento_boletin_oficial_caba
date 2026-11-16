@@ -184,25 +184,58 @@ def update_norm_review(
         }
 
 
+def pending_primary_decisions(bulletin: dict[str, Any]) -> list[dict[str, str]]:
+    """Normas RELEVANTE o REVISION_MANUAL del boletin que siguen sin decision profesional."""
+    norms = bulletin.get("normas") if isinstance(bulletin.get("normas"), dict) else {}
+    pending = []
+    for key, norm in norms.items():
+        category = str(norm.get("categoria_automatica_original") or "")
+        decision = str(norm.get("decision_manual") or SIN_REVISAR)
+        if category in {RELEVANTE, REVISION_MANUAL} and decision == SIN_REVISAR:
+            pending.append(
+                {
+                    "clave": key,
+                    "nombre": str(norm.get("nombre") or key),
+                    "categoria_automatica_original": category,
+                }
+            )
+    return sorted(pending, key=lambda item: (item["categoria_automatica_original"], item["nombre"]))
+
+
 def update_bulletin_review(
     data_dir: Path,
     week_key: str,
     bulletin_key: str,
     control: str,
     observations: str = "",
+    confirm_pending: bool = False,
 ) -> dict[str, Any]:
+    """Guarda el control complementario.
+
+    Si se marca COMPLETO y quedan alertas sin decision, no guarda y devuelve
+    la lista de pendientes, salvo que confirm_pending sea True.
+    """
     if control not in CONTROLES_COMPLEMENTARIOS:
         raise ValueError(f"Control complementario invalido: {control}")
 
     with _STORE_LOCK:
         document = load_week(data_dir, week_key)
         bulletin = _require_bulletin(document, bulletin_key)
+        pending = pending_primary_decisions(bulletin)
+        if control == CONTROL_COMPLETO and pending and not confirm_pending:
+            return {
+                "guardado": False,
+                "control_complementario": bulletin.get("control_complementario") or CONTROL_PENDIENTE,
+                "pendientes": pending,
+            }
         bulletin["control_complementario"] = control
         bulletin["observaciones"] = str(observations or "").strip()
         _save_week(data_dir, week_key, document)
         return {
+            "guardado": True,
             "control_complementario": control,
             "observaciones": bulletin["observaciones"],
+            "pendientes": pending,
         }
 
 
@@ -257,6 +290,90 @@ def list_week_keys(data_dir: Path) -> list[str]:
 
 def calculate_week_indicators(document: dict[str, Any]) -> dict[str, Any]:
     bulletins = document.get("boletines") if isinstance(document.get("boletines"), dict) else {}
+    indicators = _calculate_indicators(list(bulletins.items()), document.get("periodo") or {})
+    indicators["ajustes_derivados"] = document.get("ajustes_derivados") or []
+    indicators["observaciones"] = document.get("observaciones") or ""
+    return indicators
+
+
+def data_date_range(data_dir: Path) -> dict[str, str] | None:
+    """Primera y ultima fecha de publicacion registradas en los JSON semanales."""
+    week_keys = sorted(list_week_keys(data_dir))
+    dates: list[str] = []
+    for week_key in (week_keys[:1] + week_keys[-1:]) if week_keys else []:
+        for bulletin in load_week(data_dir, week_key)["boletines"].values():
+            if isinstance(bulletin, dict) and bulletin.get("fecha_publicacion"):
+                dates.append(str(bulletin["fecha_publicacion"]))
+    if not dates:
+        return None
+    return {"desde": min(dates), "hasta": max(dates)}
+
+
+def load_period_bulletins(
+    data_dir: Path,
+    start: date,
+    end: date,
+) -> list[tuple[str, dict[str, Any]]]:
+    """Boletines cuya fecha de publicacion cae entre start y end (inclusive).
+
+    Lee solo las semanas que se superponen con el rango. No modifica archivos.
+    """
+    selected: dict[str, dict[str, Any]] = {}
+    for week_key in sorted(list_week_keys(data_dir)):
+        week_start, week_end = week_bounds(week_key)
+        if week_end < start or week_start > end:
+            continue
+        for bulletin_key, bulletin in load_week(data_dir, week_key)["boletines"].items():
+            if not isinstance(bulletin, dict) or bulletin_key in selected:
+                continue
+            try:
+                publication_date = normalize_publication_date(bulletin.get("fecha_publicacion"))
+            except ValueError:
+                continue
+            if start <= publication_date <= end:
+                selected[bulletin_key] = bulletin
+    return list(selected.items())
+
+
+def calculate_period_indicators(data_dir: Path, start: date, end: date) -> dict[str, Any]:
+    """Indicadores de un rango de fechas, contando cada norma una sola vez.
+
+    Una norma repetida en varios boletines se computa en su primera aparicion.
+    Los porcentajes se calculan sobre los totales del periodo, nunca
+    promediando valores semanales.
+    """
+    if start > end:
+        raise ValueError("La fecha inicial no puede ser posterior a la fecha final.")
+
+    bulletins = load_period_bulletins(data_dir, start, end)
+    indicators = _calculate_indicators(
+        bulletins,
+        {"clave": "periodo", "desde": start.isoformat(), "hasta": end.isoformat()},
+    )
+
+    available = data_date_range(data_dir)
+    warnings: list[str] = []
+    if available:
+        if start.isoformat() < available["desde"]:
+            warnings.append(f"No hay registros anteriores al {_display_date(available['desde'])}.")
+        if end.isoformat() > available["hasta"]:
+            warnings.append(f"No hay registros posteriores al {_display_date(available['hasta'])}.")
+    indicators["cobertura"] = {
+        "rango_datos": available,
+        "boletines": len(bulletins),
+        "sin_registros": not bulletins,
+        "avisos": warnings,
+    }
+    indicators["ajustes_derivados"] = []
+    indicators["observaciones"] = ""
+    return indicators
+
+
+def _calculate_indicators(
+    bulletin_items: list[tuple[str, dict[str, Any]]],
+    period: dict[str, Any],
+) -> dict[str, Any]:
+    bulletins = {key: value for key, value in bulletin_items if isinstance(value, dict)}
     category_counts: Counter[str] = Counter()
     processed_keys: set[str] = set()
     publication_dates: set[str] = set()
@@ -384,7 +501,7 @@ def calculate_week_indicators(document: dict[str, Any]) -> dict[str, Any]:
     }
 
     return {
-        "periodo": document.get("periodo") or {},
+        "periodo": period,
         "dias_uso": len(publication_dates),
         "normas_procesadas": total_processed,
         "relevantes": category_counts.get(RELEVANTE, 0),
@@ -395,8 +512,6 @@ def calculate_week_indicators(document: dict[str, Any]) -> dict[str, Any]:
         "relevantes_desde_revision_manual": relevant_from_manual_review,
         "falsos_negativos": false_negatives,
         "control_complementario": weekly_control,
-        "ajustes_derivados": document.get("ajustes_derivados") or [],
-        "observaciones": document.get("observaciones") or "",
         "boletines": bulletin_rows,
         **performance_indicators,
     }
@@ -492,6 +607,11 @@ def _clean_identifier(value: Any) -> str:
         return ""
     text = str(value).strip()
     return "" if text.lower() in {"", "none", "null"} else text
+
+
+def _display_date(iso_value: str) -> str:
+    parts = str(iso_value or "").split("-")
+    return f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else str(iso_value or "")
 
 
 def _timestamp(value: datetime | None) -> str:

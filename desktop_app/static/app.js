@@ -27,13 +27,25 @@ const bulletinReviewPanel = document.getElementById("bulletin-review-panel");
 const bulletinReviewForm = document.getElementById("bulletin-review-form");
 const bulletinControl = document.getElementById("bulletin-control");
 const bulletinSaveStatus = document.getElementById("bulletin-save-status");
+const pendingWarning = document.getElementById("pending-warning");
+const pendingWarningTitle = document.getElementById("pending-warning-title");
+const pendingWarningList = document.getElementById("pending-warning-list");
+const pendingReviewAgain = document.getElementById("pending-review-again");
+const pendingSaveAnyway = document.getElementById("pending-save-anyway");
 const indicatorWeek = document.getElementById("indicator-week");
 const indicatorVolumeGrid = document.getElementById("indicator-volume-grid");
 const indicatorPerformanceGrid = document.getElementById("indicator-performance-grid");
 const indicatorPeriod = document.getElementById("indicator-period");
 const indicatorBulletinsBody = document.getElementById("indicator-bulletins-body");
+const indicatorWeekScope = document.getElementById("indicator-week-scope");
+const indicatorPeriodForm = document.getElementById("indicator-period-form");
+const indicatorStart = document.getElementById("indicator-start");
+const indicatorEnd = document.getElementById("indicator-end");
+const indicatorAllHistory = document.getElementById("indicator-all-history");
+const indicatorCoverage = document.getElementById("indicator-coverage");
 
 let currentAnalysis = null;
+let dataRange = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -125,6 +137,7 @@ function clearPanels() {
   resultsPanel.hidden = true;
   summaryPanel.hidden = true;
   bulletinReviewPanel.hidden = true;
+  hidePendingWarning();
 }
 
 function renderSummary(summary) {
@@ -362,6 +375,39 @@ async function loadWeeks() {
     `<option value="${escapeHtml(week)}">${escapeHtml(week)}</option>`
   ).join("");
   indicatorWeek.value = payload.weeks.includes(previous) ? previous : payload.current_week;
+  dataRange = payload.rango_datos || null;
+  if (dataRange && !indicatorStart.value && !indicatorEnd.value) {
+    indicatorStart.value = dataRange.desde;
+    indicatorEnd.value = dataRange.hasta;
+  }
+}
+
+function getIndicatorMode() {
+  const selected = document.querySelector('input[name="indicator_mode"]:checked');
+  return selected ? selected.value : "week";
+}
+
+function indicatorsUrl() {
+  if (getIndicatorMode() === "period") {
+    if (!indicatorStart.value || !indicatorEnd.value) {
+      return null;
+    }
+    return `/api/indicators?desde=${encodeURIComponent(indicatorStart.value)}&hasta=${encodeURIComponent(indicatorEnd.value)}`;
+  }
+  return indicatorWeek.value ? `/api/indicators?week=${encodeURIComponent(indicatorWeek.value)}` : null;
+}
+
+function renderCoverage(data) {
+  const coverage = data.cobertura;
+  const lines = [];
+  if (coverage && coverage.sin_registros) {
+    lines.push("Sin registros en el período seleccionado. No se informan valores en cero.");
+  }
+  if (coverage && coverage.avisos) {
+    lines.push(...coverage.avisos);
+  }
+  indicatorCoverage.innerHTML = lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
+  indicatorCoverage.hidden = !lines.length;
 }
 
 function formatPercentageIndicator(value) {
@@ -382,17 +428,29 @@ function renderMetricCards(container, items, performance = false) {
 }
 
 async function loadIndicators() {
-  if (!indicatorWeek.value) {
+  const url = indicatorsUrl();
+  if (!url) {
     return;
   }
-  const response = await fetch(`/api/indicators?week=${encodeURIComponent(indicatorWeek.value)}`);
+  const response = await fetch(url);
   const data = await response.json();
   if (!response.ok) {
     setMessage(data.message || "No se pudieron cargar los indicadores.", "error");
     return;
   }
   const period = data.periodo || {};
-  indicatorPeriod.textContent = `${formatDisplayDate(period.desde)} a ${formatDisplayDate(period.hasta)}`;
+  const range = `${formatDisplayDate(period.desde)} a ${formatDisplayDate(period.hasta)}`;
+  indicatorPeriod.textContent = data.cobertura
+    ? `${range} · ${data.cobertura.boletines} boletines · ${data.normas_procesadas.toLocaleString("es-AR")} normas distintas`
+    : range;
+  renderCoverage(data);
+  if (data.cobertura && data.cobertura.sin_registros) {
+    const empty = '<p class="empty-state">Sin registros en el período seleccionado.</p>';
+    indicatorVolumeGrid.innerHTML = empty;
+    indicatorPerformanceGrid.innerHTML = empty;
+    indicatorBulletinsBody.innerHTML = '<tr><td colspan="6" class="empty-state">Sin registros en el período seleccionado.</td></tr>';
+    return;
+  }
   renderMetricCards(indicatorVolumeGrid, [
     ["Días de uso", data.dias_uso],
     ["Normas procesadas", data.normas_procesadas],
@@ -497,6 +555,7 @@ document.addEventListener("change", (event) => {
     } else if (!inputs.some((input) => input.checked)) {
       bulletinInput.checked = true;
     }
+    hidePendingWarning();
     bulletinSaveStatus.textContent = "";
     bulletinSaveStatus.classList.remove("save-status--error");
   }
@@ -543,14 +602,35 @@ analysisForm.addEventListener("submit", async (event) => {
   }
 });
 
-bulletinReviewForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+const categoryLabels = {
+  RELEVANTE: "relevante automática",
+  REVISION_MANUAL: "revisión manual",
+};
+
+function hidePendingWarning() {
+  pendingWarning.hidden = true;
+  pendingWarningList.innerHTML = "";
+}
+
+function showPendingWarning(pending) {
+  const count = pending.length;
+  pendingWarningTitle.textContent = count === 1
+    ? "Queda 1 norma sin decisión en este boletín:"
+    : `Quedan ${count} normas sin decisión en este boletín:`;
+  pendingWarningList.innerHTML = pending.map((item) =>
+    `<li>${escapeHtml(item.nombre)} (${escapeHtml(categoryLabels[item.categoria_automatica_original] || item.categoria_automatica_original)})</li>`
+  ).join("");
+  pendingWarning.hidden = false;
+}
+
+async function saveBulletinControl(confirmPending = false) {
   if (!currentAnalysis) {
     return;
   }
 
   const saveButton = bulletinReviewForm.querySelector('button[type="submit"]');
   saveButton.disabled = true;
+  pendingSaveAnyway.disabled = true;
   bulletinSaveStatus.textContent = "Guardando...";
   bulletinSaveStatus.classList.remove("save-status--error");
 
@@ -563,26 +643,84 @@ bulletinReviewForm.addEventListener("submit", async (event) => {
         boletin_clave: currentAnalysis.summary.boletin_clave,
         control_complementario: getBulletinControl(),
         observaciones: "",
+        confirmar_pendientes: confirmPending,
       }),
     });
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.message || "No se pudo guardar el control complementario.");
     }
+    if (payload.status === "pendientes") {
+      showPendingWarning(payload.pendientes || []);
+      bulletinSaveStatus.textContent = "No se guardó: hay normas sin decisión.";
+      bulletinSaveStatus.classList.add("save-status--error");
+      return;
+    }
+    hidePendingWarning();
     currentAnalysis.summary.control_complementario = payload.control_complementario;
     setBulletinControl(payload.control_complementario);
     bulletinSaveStatus.textContent = "Decisión guardada.";
-    setMessage("Control complementario guardado.", "success");
+    const pendingCount = (payload.pendientes || []).length;
+    setMessage(
+      pendingCount
+        ? `Control complementario guardado como completo con ${pendingCount === 1 ? "1 norma" : `${pendingCount} normas`} sin decisión.`
+        : "Control complementario guardado.",
+      "success",
+    );
   } catch (error) {
     bulletinSaveStatus.textContent = error.message;
     bulletinSaveStatus.classList.add("save-status--error");
     setMessage(error.message, "error");
   } finally {
     saveButton.disabled = false;
+    pendingSaveAnyway.disabled = false;
   }
+}
+
+bulletinReviewForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveBulletinControl(false);
+});
+
+pendingSaveAnyway.addEventListener("click", () => saveBulletinControl(true));
+
+pendingReviewAgain.addEventListener("click", () => {
+  hidePendingWarning();
+  setBulletinControl(currentAnalysis ? currentAnalysis.summary.control_complementario : "PENDIENTE");
+  bulletinSaveStatus.textContent = "";
+  bulletinSaveStatus.classList.remove("save-status--error");
+  resultsPanel.scrollIntoView({behavior: "smooth", block: "start"});
 });
 
 indicatorWeek.addEventListener("change", loadIndicators);
+
+document.querySelectorAll('input[name="indicator_mode"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    const periodMode = getIndicatorMode() === "period";
+    indicatorWeekScope.hidden = periodMode;
+    indicatorPeriodForm.hidden = !periodMode;
+    loadIndicators();
+  });
+});
+
+indicatorPeriodForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (indicatorStart.value > indicatorEnd.value) {
+    setMessage("La fecha inicial no puede ser posterior a la fecha final.", "error");
+    return;
+  }
+  loadIndicators();
+});
+
+indicatorAllHistory.addEventListener("click", () => {
+  if (!dataRange) {
+    setMessage("Todavía no hay registros guardados.", "info");
+    return;
+  }
+  indicatorStart.value = dataRange.desde;
+  indicatorEnd.value = dataRange.hasta;
+  loadIndicators();
+});
 
 document.querySelector("main").prepend(messageBox);
 setupTabs();

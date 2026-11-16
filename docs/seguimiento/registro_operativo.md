@@ -29,7 +29,7 @@ La fecha utilizada es la fecha de publicación del ejemplar. No se generan regis
 4. Una consulta repetida actualiza el mismo ejemplar y no suma nuevamente sus normas.
 5. Revisar las normas RELEVANTE y REVISION_MANUAL.
 6. Si la revisión profesional encuentra una omisión, abrir el acordeón NO_RELEVANTE o DESCARTADA_FILTRO_ESTRUCTURAL y confirmar la norma como relevante.
-7. Indicar si el control complementario fue pendiente, parcial o completo.
+7. Indicar si el control complementario fue pendiente, parcial o completo. Al marcarlo como completo, la aplicación avisa si quedan normas RELEVANTE o REVISION_MANUAL sin decisión y lista cuáles son. Se puede volver a revisar o guardar igual como completo. Las normas de los acordeones no generan aviso, porque no requieren una decisión individual.
 8. Consultar los resultados agregados en la pestaña Indicadores.
 
 ## Decisiones manuales
@@ -48,11 +48,13 @@ La clave de una norma se construye en este orden:
 2. `id_sdin`;
 3. huella estable de los metadatos de la norma.
 
-Dentro de una semana, cada clave se cuenta una sola vez. El número de boletín identifica el ejemplar; si falta, se utiliza su fecha de publicación.
+Dentro de una semana o de un período, cada clave se cuenta una sola vez, en el primer boletín en que aparece. Por eso el total de un período puede ser menor que la suma de sus semanas: una norma publicada varios días seguidos (por ejemplo, un llamado a concurso) se computa una vez. El número de boletín identifica el ejemplar; si falta, se utiliza su fecha de publicación.
 
 ## Indicadores
 
-- **Período:** lunes a domingo de la semana seleccionada.
+- **Período:** lunes a domingo de la semana seleccionada, o un rango de fechas de publicación (desde/hasta) elegido en la vista Período. El rango puede abarcar varias semanas o cortar una semana.
+- **Cálculo por período:** los porcentajes se calculan con su fórmula sobre los totales del período; nunca se promedian porcentajes semanales.
+- **Cobertura:** si el período no tiene boletines registrados se informa «Sin registros en el período seleccionado», no ceros. Si el rango empieza antes del primer registro o termina después del último, se avisa.
 - **Días de uso:** fechas de publicación distintas incorporadas al registro.
 - **Normas procesadas:** registros únicos guardados.
 - **Clasificadas como RELEVANTE:** categoría automática original RELEVANTE.
