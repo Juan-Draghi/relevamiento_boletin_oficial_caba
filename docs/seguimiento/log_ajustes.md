@@ -473,6 +473,63 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 **Referencias**
 
 - Issue: no corresponde.
+- Commit: `75d0ac3`.
+- ADR: no corresponde.
+
+**Revisar resultado**
+
+- Período: boletines posteriores al 2026-11-16; revisar el término en el informe por término de enero de 2027.
+- Resultado: pendiente.
+
+## LOG-2026-11-16 - Convertir «superficie» en keyword condicional
+
+**Evidencia**
+
+- Período o ejemplar: 2026-07-13 a 2026-11-06, 84 boletines; informe `data/informes_estrategias/20261116_182711_terminos.md`.
+- Norma o conjunto de casos: 35 normas con "superficie" en el sumario: 34 disposiciones de DGIUR sobre inmuebles concretos (ampliación, regularización o redistribución de superficie) y la Ley N° 6979 ("Amplía la superficie concedida a favor de la Fundación Cultural Argentino Japonesa"). Ejemplo: Disposición N° 1240/DGIUR/26 (BO 7414).
+- Categoría obtenida y decisión profesional: `RELEVANTE` por `keyword_sumario: superficie`; las 35 confirmadas como `NO_RELEVANTE_CONFIRMADA`.
+- Resultado observado: 0 relevantes en 35 casos evaluados; tasa máxima de relevantes 3/35 = 8,6 %. Cumple el criterio de evidencia mínima (`docs/seguimiento/criterio_evidencia_keywords.md`), con poco margen.
+
+**Problema detectado**
+
+- Tipo: falso positivo.
+- Descripción: palabra genérica que, como keyword directa, selecciona autorizaciones individuales por inmueble.
+
+**Cambio realizado**
+
+- Archivo o parámetro: `config/config_keywords.json` — `KEYWORDS_REQUIEREN_ACCION_NORMATIVA`.
+- Operación: agregar.
+- Valor anterior: no corresponde (el término se conserva en `KEYWORDS`).
+- Valor nuevo: `superficie`.
+- Modificación: la keyword pasa de directa a condicional; insertada en orden alfabético después de "habilitación".
+
+**Motivo de incorporación o modificación**
+
+- Justificación: se eligió la opción intermedia del criterio de evidencia en lugar de eliminar el término, con el mismo efecto medido. Como condicional conserva normas generales sobre cómputo o regulación de superficies con verbo de acción y contexto normativo.
+
+**Comparación previa**
+
+- Período y base: 2026-07-13 a 2026-11-06, 84 boletines, 27113 normas; configuración vigente ya con «consulta obligatoria» y «habilitación» condicionales.
+- Informe: `data/informes_estrategias/20261116_184557_comparacion.md` (no versionado); alternativa de eliminación en `20261116_184613_comparacion.md` (mismo resultado).
+- Relevantes recuperadas / perdidas: 0 / 0 de 13.
+- Irrelevantes evitadas / añadidas (decisión + lectura completa): 30 de 329 (9,1 %) / 0 de 26771.
+- Sin información afectadas: 0.
+- Siguen seleccionadas por otra regla: Disposición N° 1359/DGIUR/26 (por "redistribución de usos") y Disposiciones N° 2091, 2539, 2566 y 2592/DGIUR/26 (por "ampliación de rubro", término en observación).
+
+**Validación**
+
+- Prueba específica: `test_individual_surface_extension_is_not_relevant` (sumario real de la Disposición N° 1240/DGIUR/26) y `test_surface_criteria_is_relevant_by_conditional_keyword` (sumario hipotético de criterios generales) en `tests/test_classifier.py`.
+- Suite completa: `python -m unittest discover -s tests`, 84 pruebas; validador de configuración del skill.
+- Resultado: favorable; configuración válida y todas las pruebas superadas.
+
+**Efecto esperado**
+
+- Resultado esperado: las autorizaciones de superficie por inmueble dejan de llegar a la lista principal; las normas generales sobre superficies siguen como `RELEVANTE`.
+- Riesgo o efecto colateral observado: un acto individual con verbo de acción que cite otra norma seguiría seleccionado. Una norma general redactada sin verbo de acción ni vocabulario normativo reconocido no se detectaría por esta vía.
+
+**Referencias**
+
+- Issue: no corresponde.
 - Commit: pendiente.
 - ADR: no corresponde.
 
