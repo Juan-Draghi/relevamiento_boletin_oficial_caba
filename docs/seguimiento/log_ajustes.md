@@ -588,7 +588,7 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 **Referencias**
 
 - Issue: no corresponde.
-- Commit: pendiente.
+- Commit: `21a3e46`.
 - ADR: no corresponde.
 
 **Revisar resultado**
