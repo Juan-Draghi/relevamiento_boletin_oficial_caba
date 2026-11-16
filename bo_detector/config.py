@@ -31,7 +31,11 @@ class DetectorConfig:
 def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> DetectorConfig:
     config_path = Path(path)
     raw = json.loads(config_path.read_text(encoding="utf-8"))
+    return config_from_dict(raw)
 
+
+def config_from_dict(raw: dict) -> DetectorConfig:
+    """Construye la configuracion del detector desde un diccionario ya leido."""
     _require_fields(
         raw,
         {

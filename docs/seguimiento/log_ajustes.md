@@ -329,6 +329,15 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 - Archivo o parámetro:
 - Modificación:
 
+**Comparación previa**
+
+- Período y base:
+- Informe:
+- Relevantes recuperadas / perdidas:
+- Irrelevantes evitadas / añadidas:
+- Sin información afectadas:
+- Siguen seleccionadas por otra regla (retiros):
+
 **Efecto esperado**
 
 - Resultado esperado:

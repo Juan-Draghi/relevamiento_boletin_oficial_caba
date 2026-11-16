@@ -173,6 +173,23 @@ Contiene:
 
 La configuración ya no se edita desde la aplicación. Los cambios se realizan mediante el skill `ajustar-keywords-bo-caba` (versionado en `.claude/skills/`; se invoca como `/ajustar-keywords-bo-caba` en Claude Code o `$ajustar-keywords-bo-caba` en Codex), que exige evidencia, presenta el ajuste exacto antes de aplicarlo, valida la configuración y las pruebas, y registra la justificación en `docs/seguimiento/log_ajustes.md`. Este flujo no genera ADR.
 
+## Revisión de estrategias
+
+El script `scripts/revisar_estrategias.py` analiza los registros guardados para revisar los términos del detector. **Sólo lee:** no modifica la configuración ni los JSON semanales. Vuelve a clasificar en memoria las normas guardadas.
+
+```bat
+python scripts\revisar_estrategias.py terminos
+python scripts\revisar_estrategias.py terminos --desde 2026-07-13 --hasta 2026-09-30
+python scripts\revisar_estrategias.py comparar --propuesta data\informes_estrategias\propuesta.json
+```
+
+- **terminos:** para cada keyword, norma curada y organismo prioritario informa cuántas coincidencias tuvo en el período, cómo se reparten entre relevantes, no relevantes y sin información, si el término decide la selección o la norma seguiría seleccionada por otra regla, y ejemplos. Marca como candidatos a revisión los términos cuyas coincidencias evaluables resultaron todas no relevantes.
+- **comparar:** aplica en memoria una propuesta de cambios y compara la selección vigente con la propuesta sobre los mismos boletines: relevantes recuperadas y perdidas, irrelevantes evitadas y añadidas, normas sin información afectadas y cambios entre `RELEVANTE` y `REVISION_MANUAL`.
+
+Referencia profesional usada: decisión registrada; las normas ocultas sin marca de boletines con control completo cuentan como «no relevantes según la lectura completa» (dato separado); el resto, como «sin información». «Seleccionada» significa `RELEVANTE` o `REVISION_MANUAL`.
+
+Los informes (Markdown y CSV) se guardan en `data/informes_estrategias/`, carpeta excluida de Git porque contiene sumarios reales. El skill `ajustar-keywords-bo-caba` usa este script como comparación previa obligatoria de todo ajuste.
+
 ## Instalación
 
 Requisitos:
@@ -224,6 +241,7 @@ relevamiento_boletin_oficial_caba/
 │   ├── classifier.py           # Reglas de clasificación
 │   ├── flatten.py              # Aplanamiento del payload
 │   ├── review_store.py         # Persistencia e indicadores
+│   ├── strategy_review.py      # Revisión de estrategias (solo lectura)
 │   └── text.py                 # Normalización textual
 ├── config/
 │   └── config_keywords.json    # Parámetros curados
@@ -234,6 +252,8 @@ relevamiento_boletin_oficial_caba/
 │   ├── static/styles.css       # Estilos de la interfaz
 │   └── templates/index.html    # Estructura de la interfaz
 ├── docs/                       # Documentación, ADR y log
+├── scripts/
+│   └── revisar_estrategias.py  # Informes por término y comparación de propuestas
 ├── tests/                      # Pruebas unitarias
 ├── install_desktop.bat
 ├── run_desktop.bat

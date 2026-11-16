@@ -125,11 +125,11 @@ Antes de proponer:
 
 1. Buscar el valor y sus variantes en toda la configuración.
 2. Revisar cómo lo consume `bo_detector/classifier.py`.
-3. Consultar de forma read-only registros históricos disponibles si contienen los campos necesarios.
-4. Estimar qué categorías podrían cambiar.
+3. Ejecutar la comparación previa con `scripts/revisar_estrategias.py comparar` (ver SKILL.md). Mide sobre los registros guardados qué normas entran o salen de la lista principal, sin modificar archivos.
+4. Para retiros, revisar cuántas normas siguen seleccionadas por otra regla.
 5. Identificar al menos un control negativo cuando el ajuste amplía coincidencias.
 
-No modificar ni normalizar `data/seguimiento/*.json`. Si no existe una base histórica suficiente, declararlo como limitación; no inventar un impacto cuantitativo.
+No modificar ni normalizar `data/seguimiento/*.json`. Si no existe una base histórica suficiente, declararlo como limitación; no inventar un impacto cuantitativo. Con pocas relevantes confirmadas, los porcentajes son frágiles: mostrar siempre las cantidades.
 
 ## 5. Operaciones admitidas
 
@@ -191,6 +191,15 @@ Usar una entrada append-only con esta estructura:
 **Motivo de incorporación o modificación**
 
 - Justificación:
+
+**Comparación previa**
+
+- Período y base: AAAA-MM-DD a AAAA-MM-DD, N boletines, N normas.
+- Informe: `data/informes_estrategias/AAAAMMDD_HHMMSS_comparacion.md` (no versionado).
+- Relevantes recuperadas / perdidas: N de N / N de N.
+- Irrelevantes evitadas / añadidas (decisión + lectura completa): N de N / N de N.
+- Sin información afectadas: N.
+- Siguen seleccionadas por otra regla (retiros): N de N.
 
 **Validación**
 

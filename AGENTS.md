@@ -126,6 +126,8 @@ Categorias de salida:
 - `bo_detector/config.py`: carga y validacion de configuracion.
 - `bo_detector/text.py`: normalizacion y busqueda textual.
 - `bo_detector/review_store.py`: persistencia JSON, decisiones e indicadores.
+- `bo_detector/strategy_review.py`: informe por termino y comparacion de configuraciones (solo lectura).
+- `scripts/revisar_estrategias.py`: linea de comandos de la revision de estrategias.
 - `config/config_keywords.json`: parametros curados.
 - `data/seguimiento/`: registros semanales generados por el uso real.
 - `desktop_app/app.py`: aplicacion Flask local y endpoints.
@@ -159,6 +161,9 @@ Precauciones:
 - El skill no debe crear ni modificar ADR. Si el pedido excede keywords, patrones u organismos y requiere cambiar logica o filtros estructurales, debe detenerse e informar que esta fuera de alcance.
 - Los cambios de configuracion deben commitearse cuando responden a un ajuste real de deteccion.
 - La app puede generar backups `config/config_keywords.backup_*.json`; no versionarlos.
+- Todo ajuste de configuracion requiere una comparacion previa con `scripts/revisar_estrategias.py comparar`, incluida en la ficha. Para revisar estrategias de un periodo usar `scripts/revisar_estrategias.py terminos`. Ambos modos solo leen.
+- Los informes de `data/informes_estrategias/` contienen sumarios reales: no versionarlos.
+- La unica version mantenida del skill es `.claude/skills/ajustar-keywords-bo-caba/`. La copia de `~/.codex/skills/ajustar-keywords-bo-caba` solo redirige a ella.
 
 ## Registro operativo, revision manual e indicadores
 

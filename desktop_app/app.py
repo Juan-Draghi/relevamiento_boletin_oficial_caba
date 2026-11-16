@@ -3,9 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-import json
 import os
-import re
 import sys
 import threading
 import uuid
@@ -26,10 +24,9 @@ from bo_detector.classifier import (
     RELEVANTE,
     REVISION_MANUAL,
 )
-from bo_detector.config import DEFAULT_CONFIG_PATH, load_config
+from bo_detector.config import load_config
 from bo_detector.flatten import flatten_normas_payload
 from bo_detector.pipeline import classify_records
-from bo_detector.text import normalize_text
 
 from bo_detector.review_store import (
     calculate_period_indicators,
@@ -58,12 +55,6 @@ TEMPLATES_DIR = BUNDLE_ROOT / "templates"
 STATIC_DIR = BUNDLE_ROOT / "static"
 REVIEW_DATA_DIR = PROJECT_ROOT / "data" / "seguimiento"
 REVIEW_DATA_DIR = Path(os.getenv("BOCABA_REVIEW_DATA_DIR", str(REVIEW_DATA_DIR)))
-CONFIG_PATH = DEFAULT_CONFIG_PATH
-EDITABLE_CONFIG_FIELDS = (
-    "KEYWORDS",
-    "LISTA_NORMAS_CURADAS",
-    "LISTA_ORGANISMOS_PRIORIDAD",
-)
 
 app = Flask(__name__, template_folder=str(TEMPLATES_DIR), static_folder=str(STATIC_DIR))
 ANALYSIS_JOBS: dict[str, dict[str, Any]] = {}
@@ -284,107 +275,20 @@ def _entry_names(entries: tuple[Any, ...]) -> list[str]:
     return [entry.original for entry in entries]
 
 
-def load_raw_config() -> dict[str, Any]:
-    return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-
-
-def get_config_editor_values() -> dict[str, str]:
-    raw_config = load_raw_config()
-    return {
-        field_name: "\n".join(str(value) for value in sorted_config_values(field_name, raw_config.get(field_name, [])))
-        for field_name in EDITABLE_CONFIG_FIELDS
-    }
-
-
-def save_config_editor_values(form_data: dict[str, str]) -> dict[str, int]:
-    raw_config = load_raw_config()
-
-    updated_values = {
-        "KEYWORDS": sorted_config_values(
-            "KEYWORDS",
-            parse_textarea_list(form_data.get("KEYWORDS", ""), "KEYWORDS"),
-        ),
-        "LISTA_NORMAS_CURADAS": parse_textarea_list(
-            form_data.get("LISTA_NORMAS_CURADAS", ""),
-            "LISTA_NORMAS_CURADAS",
-        ),
-        "LISTA_ORGANISMOS_PRIORIDAD": sorted_config_values(
-            "LISTA_ORGANISMOS_PRIORIDAD",
-            parse_textarea_list(
-                form_data.get("LISTA_ORGANISMOS_PRIORIDAD", ""),
-                "LISTA_ORGANISMOS_PRIORIDAD",
-            ),
-        ),
-    }
-    validate_regex_patterns(updated_values["LISTA_NORMAS_CURADAS"])
-
-    raw_config.update(updated_values)
-    backup_config_file()
-
-    tmp_path = CONFIG_PATH.with_suffix(".json.tmp")
-    tmp_path.write_text(
-        json.dumps(raw_config, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    tmp_path.replace(CONFIG_PATH)
-
-    # Fuerza validacion integral con el mismo cargador usado por el detector.
-    load_config(CONFIG_PATH)
-    return {field_name: len(values) for field_name, values in updated_values.items()}
-
-
-def parse_textarea_list(raw_text: str, field_name: str) -> list[str]:
-    values: list[str] = []
-    seen: set[str] = set()
-    for line in raw_text.splitlines():
-        value = line.strip()
-        if not value or value in seen:
-            continue
-        values.append(value)
-        seen.add(value)
-
-    if not values:
-        raise ValueError(f"{field_name} no puede quedar vacio.")
-    return values
-
-
-def sorted_config_values(field_name: str, values: list[str]) -> list[str]:
-    if field_name not in {"KEYWORDS", "LISTA_ORGANISMOS_PRIORIDAD"}:
-        return values
-    return sorted((str(value) for value in values), key=lambda value: (normalize_text(value), value))
-
-
-def validate_regex_patterns(patterns: list[str]) -> None:
-    for pattern in patterns:
-        try:
-            re.compile(pattern, flags=re.IGNORECASE)
-        except re.error as exc:
-            raise ValueError(f"Regex invalida en LISTA_NORMAS_CURADAS: {pattern} ({exc})") from exc
-
-
-def backup_config_file() -> None:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = CONFIG_PATH.with_name(f"config_keywords.backup_{timestamp}.json")
-    backup_path.write_text(CONFIG_PATH.read_text(encoding="utf-8"), encoding="utf-8")
-
-
 @app.get("/")
 def index():
     message = ""
     message_kind = "info"
     try:
         config_summary = get_config_summary()
-        config_editor_values = get_config_editor_values()
     except (ValueError, OSError) as exc:
         config_summary = {}
-        config_editor_values = {}
         message = f"No se pudo cargar config/config_keywords.json: {exc}"
         message_kind = "error"
 
     return render_template(
         "index.html",
         config_summary=config_summary,
-        config_editor_values=config_editor_values,
         message=message,
         message_kind=message_kind,
         default_parametro="0",
@@ -413,25 +317,14 @@ def api_analyze_status(job_id: str):
 
 @app.post("/api/config")
 def api_save_config():
-
+    # La edicion de configuracion se retiro de la interfaz (ADR-002). Los cambios
+    # se hacen con el skill ajustar-keywords-bo-caba y quedan en log_ajustes.md.
     return jsonify(
         {
             "status": "error",
             "message": "La edicion de configuracion fue retirada de la aplicacion.",
         }
     ), 404
-    try:
-        counts = save_config_editor_values(dict(request.form))
-        return jsonify(
-            {
-                "status": "ok",
-                "message": "Configuracion actualizada. Se genero una copia de respaldo.",
-                "counts": counts,
-            }
-        )
-    except (ValueError, OSError, json.JSONDecodeError) as exc:
-        return jsonify({"status": "error", "message": str(exc)}), 400
-
 
 
 @app.get("/api/indicators/weeks")

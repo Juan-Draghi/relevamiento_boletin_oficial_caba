@@ -12,3 +12,6 @@ desktop_app/_config_save_test/
 data/seguimiento/*.tmp
 data/seguimiento/*.json
 !data/seguimiento/ejemplo_seguimiento.json
+
+# Informes de revision de estrategias (contienen sumarios reales)
+data/informes_estrategias/
