@@ -55,22 +55,24 @@ Dentro de una semana o de un período, cada clave se cuenta una sola vez, en el 
 - **Período:** lunes a domingo de la semana seleccionada, o un rango de fechas de publicación (desde/hasta) elegido en la vista Período. El rango puede abarcar varias semanas o cortar una semana.
 - **Cálculo por período:** los porcentajes se calculan con su fórmula sobre los totales del período; nunca se promedian porcentajes semanales.
 - **Cobertura:** si el período no tiene boletines registrados se informa «Sin registros en el período seleccionado», no ceros. Si el rango empieza antes del primer registro o termina después del último, se avisa.
+- **Normas repetidas:** cada norma se cuenta una vez, en su primera aparición, pero se usa la decisión registrada en cualquiera de sus copias. Si las copias tienen decisiones distintas, se usa la más reciente y se avisa la contradicción.
 - **Días de uso:** fechas de publicación distintas incorporadas al registro.
 - **Normas procesadas:** registros únicos guardados.
-- **Clasificadas como RELEVANTE:** categoría automática original RELEVANTE.
+- **Alertas automáticas:** categoría automática original RELEVANTE.
 - **Casos de REVISION_MANUAL:** categoría automática original REVISION_MANUAL.
-- **Relevantes confirmadas en total:** decisiones RELEVANTE_CONFIRMADA, cualquiera sea la categoría original.
+- **Relevantes confirmadas:** decisiones RELEVANTE_CONFIRMADA, cualquiera sea la categoría original.
 - **Relevantes surgidas de REVISION_MANUAL:** categoría original REVISION_MANUAL y decisión RELEVANTE_CONFIRMADA.
-- **Falsos negativos:** categoría original NO_RELEVANTE o DESCARTADA_FILTRO_ESTRUCTURAL y decisión RELEVANTE_CONFIRMADA.
+- **Omisiones identificadas:** categoría original NO_RELEVANTE o DESCARTADA_FILTRO_ESTRUCTURAL y decisión RELEVANTE_CONFIRMADA.
+- **% de omisiones identificadas:** omisiones identificadas sobre relevantes confirmadas. «No calculable» sin relevantes confirmadas; «provisional» si algún boletín no tiene control completo o quedan alertas sin decisión.
+- **% de alertas automáticas descartadas:** alertas RELEVANTE descartadas sobre alertas RELEVANTE con decisión.
 - **Control complementario:** completo cuando todos los ejemplares están completos; parcial cuando existe control parcial o una combinación de estados; N/D cuando todos siguen pendientes; No utilizado cuando no hay ejemplares.
-- **Cobertura de validación:** decisiones profesionales registradas sobre el total procesado.
-- **Precisión automática:** relevantes automáticas confirmadas sobre alertas automáticas validadas.
-- **Tasa de falsos positivos:** alertas automáticas descartadas sobre alertas automáticas validadas.
-- **Tasa de revisión manual:** casos REVISION_MANUAL sobre el total procesado.
-- **Rendimiento de revisión manual:** relevantes confirmadas entre los casos REVISION_MANUAL resueltos.
-- **Reducción de lectura:** NO_RELEVANTE y DESCARTADA_FILTRO_ESTRUCTURAL sobre el total procesado.
+- **Normas con decisión registrada:** decisiones profesionales registradas sobre el total procesado (antes «cobertura de validación»).
+- **Precisión automática:** relevantes automáticas confirmadas sobre alertas automáticas con decisión; complemento del porcentaje de alertas descartadas.
+- **Derivación a revisión manual:** casos REVISION_MANUAL sobre el total procesado.
+- **Rendimiento de la revisión manual:** relevantes confirmadas entre los casos REVISION_MANUAL resueltos.
+- **Normas excluidas de la selección principal:** NO_RELEVANTE y DESCARTADA_FILTRO_ESTRUCTURAL sobre el total procesado (antes «reducción de lectura»). No mide ahorro efectivo de lectura.
 
-La interfaz acompaña cada indicador de desempeño con una descripción breve y la base utilizada para calcularlo.
+La interfaz acompaña cada indicador con una descripción breve y la base utilizada para calcularlo, y avisa sobre alertas sin decisión, boletines completos con pendientes y decisiones contradictorias.
 
 ## Gobernanza de la configuración
 
@@ -82,9 +84,10 @@ Los ajustes derivados y sus motivos no forman parte de la carga ordinaria ni se 
 - `N/D`: la métrica no pudo determinarse.
 - Las tasas de precisión, falsos positivos y rendimiento manual se informan como `N/D` cuando no existen decisiones suficientes para formar el denominador.
 - `No utilizado`: no se registró actividad.
-- Si no se detectaron falsos negativos, el valor sólo puede ser `0` cuando el control complementario está completo.
-- Si el control es parcial o está pendiente y no se detectaron casos, falsos negativos se informa como `N/D`.
-- Un caso de REVISION_MANUAL confirmado como relevante no es un falso negativo.
+- `No calculable`: el porcentaje de omisiones no tiene relevantes confirmadas como base.
+- `provisional`: el porcentaje de omisiones puede cambiar porque la revisión del alcance no está cerrada.
+- Un 0 % de omisiones identificadas no garantiza ausencia de omisiones reales.
+- Un caso de REVISION_MANUAL confirmado como relevante no es una omisión.
 - No se reconstruyen métricas históricas sin evidencia.
 
 ## Dependencias
@@ -100,7 +103,7 @@ La persistencia utiliza únicamente la biblioteca estándar de Python y archivos
 - Una edición manual incorrecta del JSON puede invalidar el archivo; la aplicación valida el esquema al leerlo.
 - Los archivos se escriben primero con extensión temporal y luego se reemplazan, para reducir el riesgo de corrupción.
 - La categoría original y la decisión manual se preservan al repetir una consulta.
-- Los falsos negativos requieren una observación breve como evidencia.
+- Las omisiones identificadas requieren una observación breve como evidencia.
 - Las decisiones ordinarias y el control complementario no solicitan observaciones opcionales.
 
 ## Decisiones relacionadas

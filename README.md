@@ -83,7 +83,7 @@ La aplicación Flask está pensada para el uso diario en Windows. Permite:
 - ingresar un número de boletín u otro parámetro admitido;
 - revisar las normas `RELEVANTE` y `REVISION_MANUAL`;
 - guardar una decisión profesional por norma mediante casillas de selección;
-- desplegar `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` únicamente para registrar posibles falsos negativos;
+- desplegar `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` únicamente para registrar omisiones identificadas;
 - indicar si el control complementario está pendiente, parcial o completo; al marcarlo como completo, la aplicación avisa si quedan alertas sin decisión;
 - consultar volumen operativo e indicadores de desempeño en una pestaña separada;
 - consultar un resumen de la configuración en modo de solo lectura.
@@ -104,7 +104,7 @@ El registro conserva:
 - normas deduplicadas;
 - categoría automática original;
 - decisión profesional;
-- evidencia de falsos negativos cuando corresponde;
+- evidencia de las omisiones identificadas cuando corresponde;
 - estado del control complementario.
 
 Una consulta repetida actualiza el mismo ejemplar y no vuelve a sumar sus normas. Los indicadores se calculan desde los registros guardados; no se persisten totales derivados.
@@ -119,35 +119,37 @@ El archivo versionado `data/seguimiento/ejemplo_seguimiento.json` documenta el e
 - `RELEVANTE_CONFIRMADA`: la relevancia fue confirmada.
 - `NO_RELEVANTE_CONFIRMADA`: la norma fue descartada por la revisión profesional.
 
-Un caso de `REVISION_MANUAL` confirmado como relevante no es un falso negativo. Sólo son falsos negativos las normas originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` luego confirmadas como relevantes.
+Un caso de `REVISION_MANUAL` confirmado como relevante no es una omisión. Sólo son omisiones identificadas las normas originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` luego confirmadas como relevantes.
 
 ## Indicadores semanales y por período
 
 La pestaña Indicadores permite consultar una semana o un período de fechas (desde/hasta, o todo el histórico). En un período, cada norma se cuenta una sola vez aunque se haya publicado en varios boletines, y los porcentajes se calculan sobre los totales del período, sin promediar semanas. Si el período no tiene registros, se informa así en lugar de mostrar ceros.
 
-La pestaña separa dos grupos.
+La pestaña organiza los datos en tres niveles (ver ADR-007).
 
-### Volumen operativo
+### Indicadores principales
 
-- días de uso;
-- normas procesadas;
-- relevantes automáticas;
-- casos de revisión manual;
-- relevantes confirmadas;
-- relevantes surgidas de revisión manual;
-- falsos negativos;
-- estado del control complementario.
+- **Relevantes confirmadas:** normas confirmadas como relevantes, cualquiera sea su categoría automática original.
+- **Omisiones identificadas:** normas originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` confirmadas como relevantes.
+- **% de omisiones identificadas:** omisiones identificadas sobre todas las relevantes confirmadas. Es «No calculable» si no hay relevantes confirmadas y «provisional» si algún boletín no tiene control completo o quedan alertas sin decisión. Mide omisiones identificadas entre las normas que ingresaron a la aplicación; no mide normas que nunca ingresaron.
+- **% de alertas automáticas descartadas:** alertas originalmente `RELEVANTE` descartadas sobre las alertas `RELEVANTE` con decisión registrada.
 
-### Desempeño del detector
+### Indicadores secundarios
 
-- **Cobertura de validación:** decisiones profesionales registradas sobre el total procesado.
-- **Precisión automática:** alertas automáticas confirmadas como relevantes sobre alertas automáticas validadas.
-- **Tasa de falsos positivos:** alertas automáticas descartadas sobre alertas automáticas validadas.
-- **Tasa de revisión manual:** casos `REVISION_MANUAL` sobre el total procesado.
-- **Rendimiento de revisión manual:** casos confirmados como relevantes sobre casos de revisión manual resueltos.
-- **Reducción de lectura:** normas `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` sobre el total procesado.
+- **Normas procesadas:** normas distintas incorporadas al registro.
+- **Normas con decisión registrada:** decisiones profesionales sobre el total procesado. No equivale al porcentaje del boletín leído.
+- **Derivación a revisión manual:** casos `REVISION_MANUAL` sobre el total procesado.
+- **Rendimiento de la revisión manual:** casos confirmados como relevantes sobre casos de revisión manual resueltos.
 
-La interfaz muestra una descripción y la base utilizada para cada porcentaje. Cuando no existe un denominador suficiente, informa `N/D`.
+### Datos complementarios
+
+En una sección plegada: días de uso, alertas automáticas, casos de revisión manual, relevantes desde revisión manual, precisión automática (complemento del porcentaje de alertas descartadas), **normas excluidas de la selección principal** (`NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` sobre el total procesado, sin atribuirle ahorro de lectura) y estado del control complementario.
+
+### Avisos de consistencia
+
+La pestaña avisa si hay alertas sin decisión, boletines marcados como completos con alertas sin decisión o normas repetidas con decisiones distintas en distintos boletines. Los avisos no modifican los registros.
+
+La interfaz muestra una descripción y la base utilizada para cada porcentaje. Cuando no existe un denominador suficiente, informa `N/D` o «No calculable».
 
 No se calculan recall ni F1 porque requieren un universo completamente revisado. Podrán evaluarse cuando el uso diario produzca una base de verdad suficientemente completa y controlada.
 
@@ -248,7 +250,7 @@ Ejecutar:
 python -m unittest discover -s tests
 ```
 
-La suite cubre el detector, la persistencia semanal, deduplicación, decisiones manuales, falsos negativos, control complementario, indicadores y endpoints de la aplicación.
+La suite cubre el detector, la persistencia semanal, deduplicación, decisiones manuales, omisiones identificadas, control complementario, indicadores y endpoints de la aplicación.
 
 ## Documentación
 

@@ -373,86 +373,129 @@ def _calculate_indicators(
     bulletin_items: list[tuple[str, dict[str, Any]]],
     period: dict[str, Any],
 ) -> dict[str, Any]:
+    """Calcula los indicadores de un conjunto de boletines.
+
+    Cada norma se cuenta una sola vez, en el primer boletin en que aparece.
+    Si una norma repetida tiene la decision guardada en otra copia, se usa esa
+    decision. Si las copias tienen decisiones distintas, se informa como
+    contradiccion y se usa la decision registrada mas reciente.
+    """
     bulletins = {key: value for key, value in bulletin_items if isinstance(value, dict)}
+    ordered_bulletins = sorted(
+        bulletins.items(),
+        key=lambda item: (str(item[1].get("fecha_publicacion") or ""), item[0]),
+    )
+
+    merged_norms = _merge_norm_copies(ordered_bulletins)
+
     category_counts: Counter[str] = Counter()
-    processed_keys: set[str] = set()
     publication_dates: set[str] = set()
     relevant_confirmed = 0
     relevant_from_manual_review = 0
-    false_negative_count = 0
+    omission_count = 0
     validated_count = 0
     automatic_relevant_validated = 0
     automatic_true_positives = 0
     automatic_false_positives = 0
     manual_review_validated = 0
     manual_review_relevant = 0
-    bulletin_rows: list[dict[str, Any]] = []
+    pending: list[dict[str, Any]] = []
 
-    for bulletin_key, bulletin in sorted(
-        bulletins.items(),
-        key=lambda item: (str(item[1].get("fecha_publicacion") or ""), item[0]),
-    ):
+    for item in merged_norms.values():
+        category = item["categoria"]
+        decision = item["decision"]
+        category_counts[category] += 1
+
+        if decision in {RELEVANTE_CONFIRMADA, NO_RELEVANTE_CONFIRMADA}:
+            validated_count += 1
+            if category == RELEVANTE:
+                automatic_relevant_validated += 1
+                if decision == RELEVANTE_CONFIRMADA:
+                    automatic_true_positives += 1
+                else:
+                    automatic_false_positives += 1
+            elif category == REVISION_MANUAL:
+                manual_review_validated += 1
+                if decision == RELEVANTE_CONFIRMADA:
+                    manual_review_relevant += 1
+        elif item["pendiente"]:
+            pending.append(
+                {
+                    "nombre": item["nombre"],
+                    "categoria_automatica_original": category,
+                    "numero_boletin": item["numero_boletin"],
+                    "fecha_publicacion": item["fecha_publicacion"],
+                    "url_norma": item["url_norma"],
+                }
+            )
+
+        if decision == RELEVANTE_CONFIRMADA:
+            relevant_confirmed += 1
+            if category == REVISION_MANUAL:
+                relevant_from_manual_review += 1
+            elif category in {NO_RELEVANTE, DESCARTADA_FILTRO_ESTRUCTURAL}:
+                omission_count += 1
+
+    pending_keys = {key for key, item in merged_norms.items() if item["pendiente"]}
+    bulletin_rows: list[dict[str, Any]] = []
+    complete_with_pending: list[dict[str, Any]] = []
+    for bulletin_key, bulletin in ordered_bulletins:
         publication_date = str(bulletin.get("fecha_publicacion") or "")
         if publication_date:
             publication_dates.add(publication_date)
         norms = bulletin.get("normas") if isinstance(bulletin.get("normas"), dict) else {}
-        bulletin_false_negatives = 0
-        bulletin_relevant_confirmed = 0
-
-        for key, norm in norms.items():
-            if key in processed_keys:
-                continue
-            processed_keys.add(key)
-            category = str(norm.get("categoria_automatica_original") or "")
-            decision = str(norm.get("decision_manual") or SIN_REVISAR)
-            category_counts[category] += 1
-
-            decision_is_recorded = decision in {RELEVANTE_CONFIRMADA, NO_RELEVANTE_CONFIRMADA}
-            if decision_is_recorded:
-                validated_count += 1
-                if category == RELEVANTE:
-                    automatic_relevant_validated += 1
-                    if decision == RELEVANTE_CONFIRMADA:
-                        automatic_true_positives += 1
-                    else:
-                        automatic_false_positives += 1
-                elif category == REVISION_MANUAL:
-                    manual_review_validated += 1
-                    if decision == RELEVANTE_CONFIRMADA:
-                        manual_review_relevant += 1
-
-            if decision == RELEVANTE_CONFIRMADA:
-                relevant_confirmed += 1
-                bulletin_relevant_confirmed += 1
-                if category == REVISION_MANUAL:
-                    relevant_from_manual_review += 1
-                elif category in {NO_RELEVANTE, DESCARTADA_FILTRO_ESTRUCTURAL}:
-                    false_negative_count += 1
-                    bulletin_false_negatives += 1
-
+        control = bulletin.get("control_complementario") or CONTROL_PENDIENTE
+        # Las filas por boletin muestran las decisiones guardadas en ese boletin.
+        local_relevant = 0
+        local_omissions = 0
+        for norm in norms.values():
+            if isinstance(norm, dict) and norm.get("decision_manual") == RELEVANTE_CONFIRMADA:
+                local_relevant += 1
+                if norm.get("categoria_automatica_original") in {NO_RELEVANTE, DESCARTADA_FILTRO_ESTRUCTURAL}:
+                    local_omissions += 1
+        bulletin_pending = len(pending_keys.intersection(norms.keys()))
+        if control == CONTROL_COMPLETO and bulletin_pending:
+            complete_with_pending.append(
+                {
+                    "numero_boletin": bulletin.get("numero_boletin") or "",
+                    "fecha_publicacion": publication_date,
+                    "pendientes": bulletin_pending,
+                }
+            )
         bulletin_rows.append(
             {
                 "clave": bulletin_key,
                 "numero_boletin": bulletin.get("numero_boletin") or "",
                 "fecha_publicacion": publication_date,
-                "control_complementario": bulletin.get("control_complementario") or CONTROL_PENDIENTE,
+                "control_complementario": control,
                 "normas_procesadas": len(norms),
-                "relevantes_confirmadas": bulletin_relevant_confirmed,
-                "falsos_negativos": bulletin_false_negatives,
+                "relevantes_confirmadas": local_relevant,
+                "omisiones_identificadas": local_omissions,
             }
         )
 
     weekly_control = _weekly_control(bulletins)
-    false_negatives: int | str
-    if false_negative_count:
-        false_negatives = false_negative_count
-    elif weekly_control == CONTROL_COMPLETO:
-        false_negatives = 0
-    else:
-        false_negatives = "N/D"
-
-    total_processed = len(processed_keys)
+    total_processed = len(merged_norms)
     no_activity = "No utilizado"
+    pending.sort(key=lambda entry: (entry["fecha_publicacion"], entry["nombre"]))
+    contradictions = [
+        {"nombre": item["nombre"], "decisiones": item["decisiones_registradas"]}
+        for item in merged_norms.values()
+        if item["contradiccion"]
+    ]
+
+    # El porcentaje de omisiones es provisional mientras la revision no este cerrada.
+    provisional_reasons: list[str] = []
+    if bulletins and weekly_control != CONTROL_COMPLETO:
+        provisional_reasons.append("Hay boletines sin control complementario completo.")
+    if pending:
+        provisional_reasons.append("Hay alertas sin decisión profesional.")
+
+    omission_percentage: float | str
+    if relevant_confirmed:
+        omission_percentage = round(omission_count / relevant_confirmed * 100, 1)
+    else:
+        omission_percentage = "No calculable"
 
     performance_indicators = {
         "cobertura_validacion": (
@@ -493,10 +536,12 @@ def _calculate_indicators(
             if total_processed
             else no_activity
         ),
+        "porcentaje_omisiones": omission_percentage,
         "bases_desempeno": {
             "normas_validadas": validated_count,
             "alertas_automaticas_validadas": automatic_relevant_validated,
             "casos_revision_manual_validados": manual_review_validated,
+            "relevantes_confirmadas": relevant_confirmed,
         },
     }
 
@@ -510,11 +555,68 @@ def _calculate_indicators(
         "descartadas": category_counts.get(DESCARTADA_FILTRO_ESTRUCTURAL, 0),
         "relevantes_confirmadas_total": relevant_confirmed,
         "relevantes_desde_revision_manual": relevant_from_manual_review,
-        "falsos_negativos": false_negatives,
+        "omisiones_identificadas": omission_count,
+        "omisiones_provisional": bool(provisional_reasons),
+        "motivos_provisional": provisional_reasons,
         "control_complementario": weekly_control,
+        "avisos_consistencia": {
+            "pendientes": pending,
+            "completos_con_pendientes": complete_with_pending,
+            "contradicciones": contradictions,
+        },
         "boletines": bulletin_rows,
         **performance_indicators,
     }
+
+
+def _merge_norm_copies(
+    ordered_bulletins: list[tuple[str, dict[str, Any]]],
+) -> dict[str, dict[str, Any]]:
+    """Une las copias de una misma norma publicada en varios boletines.
+
+    Devuelve un elemento por clave de norma, con los datos de la primera
+    aparicion y la decision registrada en cualquiera de sus copias.
+    """
+    merged: dict[str, dict[str, Any]] = {}
+    for _bulletin_key, bulletin in ordered_bulletins:
+        norms = bulletin.get("normas") if isinstance(bulletin.get("normas"), dict) else {}
+        for key, norm in norms.items():
+            if not isinstance(norm, dict):
+                continue
+            item = merged.get(key)
+            if item is None:
+                item = {
+                    "categoria": str(norm.get("categoria_automatica_original") or ""),
+                    "nombre": str(norm.get("nombre") or key),
+                    "url_norma": str(norm.get("url_norma") or ""),
+                    "numero_boletin": str(bulletin.get("numero_boletin") or ""),
+                    "fecha_publicacion": str(bulletin.get("fecha_publicacion") or ""),
+                    "decisiones_registradas": [],
+                }
+                merged[key] = item
+            decision = str(norm.get("decision_manual") or SIN_REVISAR)
+            if decision != SIN_REVISAR:
+                item["decisiones_registradas"].append(
+                    {
+                        "numero_boletin": str(bulletin.get("numero_boletin") or ""),
+                        "fecha_publicacion": str(bulletin.get("fecha_publicacion") or ""),
+                        "decision_manual": decision,
+                        "revisado_en": str(norm.get("revisado_en") or ""),
+                    }
+                )
+
+    for item in merged.values():
+        recorded = item["decisiones_registradas"]
+        if recorded:
+            latest = max(recorded, key=lambda entry: entry["revisado_en"])
+            item["decision"] = latest["decision_manual"]
+        else:
+            item["decision"] = SIN_REVISAR
+        item["contradiccion"] = len({entry["decision_manual"] for entry in recorded}) > 1
+        item["pendiente"] = (
+            item["decision"] == SIN_REVISAR and item["categoria"] in {RELEVANTE, REVISION_MANUAL}
+        )
+    return merged
 
 
 def _empty_week(week_key: str) -> dict[str, Any]:

@@ -87,7 +87,9 @@ class ReviewStoreTests(unittest.TestCase):
 
         self.assertEqual(indicators["relevantes_confirmadas_total"], 1)
         self.assertEqual(indicators["relevantes_desde_revision_manual"], 1)
-        self.assertEqual(indicators["falsos_negativos"], 0)
+        self.assertEqual(indicators["omisiones_identificadas"], 0)
+        self.assertEqual(indicators["porcentaje_omisiones"], 0.0)
+        self.assertFalse(indicators["omisiones_provisional"])
 
     def test_false_negative_requires_observation_and_is_derived(self):
         state = upsert_analysis(
@@ -118,9 +120,10 @@ class ReviewStoreTests(unittest.TestCase):
         indicators = calculate_week_indicators(load_week(self.data_dir, state["semana"]))
 
         self.assertTrue(result["es_falso_negativo"])
-        self.assertEqual(indicators["falsos_negativos"], 1)
+        self.assertEqual(indicators["omisiones_identificadas"], 1)
+        self.assertEqual(indicators["porcentaje_omisiones"], 100.0)
 
-    def test_zero_false_negatives_requires_complete_control(self):
+    def test_zero_omissions_are_provisional_until_control_is_complete(self):
         state = upsert_analysis(
             self.data_dir,
             self.summary,
@@ -144,9 +147,13 @@ class ReviewStoreTests(unittest.TestCase):
         )
         complete = calculate_week_indicators(load_week(self.data_dir, state["semana"]))
 
-        self.assertEqual(pending["falsos_negativos"], "N/D")
-        self.assertEqual(partial["falsos_negativos"], "N/D")
-        self.assertEqual(complete["falsos_negativos"], 0)
+        # Sin relevantes confirmadas el porcentaje no es calculable en ningun estado.
+        for indicators in (pending, partial, complete):
+            self.assertEqual(indicators["omisiones_identificadas"], 0)
+            self.assertEqual(indicators["porcentaje_omisiones"], "No calculable")
+        self.assertTrue(pending["omisiones_provisional"])
+        self.assertTrue(partial["omisiones_provisional"])
+        self.assertFalse(complete["omisiones_provisional"])
 
     def test_no_activity_uses_no_utilizado(self):
         indicators = calculate_week_indicators(load_week(self.data_dir, "2026-W28"))
@@ -154,7 +161,9 @@ class ReviewStoreTests(unittest.TestCase):
         self.assertEqual(indicators["dias_uso"], 0)
         self.assertEqual(indicators["normas_procesadas"], 0)
         self.assertEqual(indicators["control_complementario"], "No utilizado")
-        self.assertEqual(indicators["falsos_negativos"], "N/D")
+        self.assertEqual(indicators["omisiones_identificadas"], 0)
+        self.assertEqual(indicators["porcentaje_omisiones"], "No calculable")
+        self.assertFalse(indicators["omisiones_provisional"])
         self.assertEqual(indicators["cobertura_validacion"], "No utilizado")
         self.assertEqual(indicators["precision_automatica"], "N/D")
 
@@ -251,6 +260,7 @@ class ReviewStoreTests(unittest.TestCase):
                 "normas_validadas": 5,
                 "alertas_automaticas_validadas": 2,
                 "casos_revision_manual_validados": 2,
+                "relevantes_confirmadas": 2,
             },
         )
     def test_week_json_is_utf8_and_human_readable(self):

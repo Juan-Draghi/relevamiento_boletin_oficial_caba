@@ -33,8 +33,10 @@ const pendingWarningList = document.getElementById("pending-warning-list");
 const pendingReviewAgain = document.getElementById("pending-review-again");
 const pendingSaveAnyway = document.getElementById("pending-save-anyway");
 const indicatorWeek = document.getElementById("indicator-week");
-const indicatorVolumeGrid = document.getElementById("indicator-volume-grid");
-const indicatorPerformanceGrid = document.getElementById("indicator-performance-grid");
+const indicatorMainGrid = document.getElementById("indicator-main-grid");
+const indicatorSecondaryGrid = document.getElementById("indicator-secondary-grid");
+const indicatorExtraGrid = document.getElementById("indicator-extra-grid");
+const indicatorConsistency = document.getElementById("indicator-consistency");
 const indicatorPeriod = document.getElementById("indicator-period");
 const indicatorBulletinsBody = document.getElementById("indicator-bulletins-body");
 const indicatorWeekScope = document.getElementById("indicator-week-scope");
@@ -267,8 +269,8 @@ function updateFalseNegativeBadges(results) {
     result.categoria_automatica_original === category &&
     result.decision_manual === "RELEVANTE_CONFIRMADA"
   ).length;
-  noRelevantFalseNegatives.textContent = `${countFor("NO_RELEVANTE")} falsos negativos`;
-  discardedFalseNegatives.textContent = `${countFor("DESCARTADA_FILTRO_ESTRUCTURAL")} falsos negativos`;
+  noRelevantFalseNegatives.textContent = `${countFor("NO_RELEVANTE")} omisiones identificadas`;
+  discardedFalseNegatives.textContent = `${countFor("DESCARTADA_FILTRO_ESTRUCTURAL")} omisiones identificadas`;
 }
 
 async function saveNormReview(button) {
@@ -312,7 +314,7 @@ async function saveNormReview(button) {
     row.classList.toggle("review-card--false-negative", payload.es_falso_negativo);
     updateFalseNegativeBadges(currentAnalysis.results);
     status.classList.remove("save-status--error");
-    status.textContent = payload.es_falso_negativo ? "Falso negativo registrado." : "Decisión guardada.";
+    status.textContent = payload.es_falso_negativo ? "Omisión identificada registrada." : "Decisión guardada.";
   } catch (error) {
     status.textContent = error.message;
     status.classList.add("save-status--error");
@@ -446,61 +448,98 @@ async function loadIndicators() {
   renderCoverage(data);
   if (data.cobertura && data.cobertura.sin_registros) {
     const empty = '<p class="empty-state">Sin registros en el período seleccionado.</p>';
-    indicatorVolumeGrid.innerHTML = empty;
-    indicatorPerformanceGrid.innerHTML = empty;
+    indicatorMainGrid.innerHTML = empty;
+    indicatorSecondaryGrid.innerHTML = empty;
+    indicatorExtraGrid.innerHTML = empty;
+    indicatorConsistency.hidden = true;
     indicatorBulletinsBody.innerHTML = '<tr><td colspan="6" class="empty-state">Sin registros en el período seleccionado.</td></tr>';
     return;
   }
-  renderMetricCards(indicatorVolumeGrid, [
-    ["Días de uso", data.dias_uso],
-    ["Normas procesadas", data.normas_procesadas],
-    ["Relevantes automáticas", data.relevantes],
-    ["Revisión manual", data.revision_manual],
-    ["Relevantes confirmadas", data.relevantes_confirmadas_total],
-    ["Desde revisión manual", data.relevantes_desde_revision_manual],
-    ["Falsos negativos", data.falsos_negativos],
-    ["Control complementario", data.control_complementario],
-  ]);
+  renderConsistency(data.avisos_consistencia || {});
 
   const bases = data.bases_desempeno || {};
-  renderMetricCards(indicatorPerformanceGrid, [
+  const omissionValue = typeof data.porcentaje_omisiones === "number"
+    ? formatPercentageIndicator(data.porcentaje_omisiones) + (data.omisiones_provisional ? " (provisional)" : "")
+    : data.porcentaje_omisiones;
+  const omissionDetail = [
+    "Base: " + data.omisiones_identificadas + " de " + (bases.relevantes_confirmadas || 0) + " relevantes confirmadas",
+    ...(data.motivos_provisional || []),
+  ].join(" · ");
+
+  renderMetricCards(indicatorMainGrid, [
     [
-      "Cobertura de validación",
-      formatPercentageIndicator(data.cobertura_validacion),
-      "Porcentaje de normas procesadas que ya tienen una decisión profesional.",
-      "Base: " + (bases.normas_validadas || 0) + " normas con decisión",
+      "Relevantes confirmadas",
+      data.relevantes_confirmadas_total,
+      "Normas confirmadas como relevantes, cualquiera sea su categoría automática original.",
+      "",
     ],
+    [
+      "Omisiones identificadas",
+      data.omisiones_identificadas,
+      "Normas no relevantes o descartadas por el detector que se confirmaron como relevantes.",
+      data.omisiones_provisional ? "Provisional: " + data.motivos_provisional.join(" ") : "",
+    ],
+    [
+      "% de omisiones identificadas",
+      omissionValue,
+      "Omisiones identificadas entre las normas que ingresaron a la aplicación. No mide normas que nunca ingresaron.",
+      omissionDetail,
+    ],
+    [
+      "% de alertas automáticas descartadas",
+      formatPercentageIndicator(data.tasa_falsos_positivos),
+      "Alertas automáticas que la validación profesional descartó.",
+      "Base: " + (bases.alertas_automaticas_validadas || 0) + " alertas automáticas con decisión",
+    ],
+  ], true);
+
+  renderMetricCards(indicatorSecondaryGrid, [
+    [
+      "Normas procesadas",
+      data.normas_procesadas,
+      "Normas distintas incorporadas al registro.",
+      "",
+    ],
+    [
+      "Normas con decisión registrada",
+      formatPercentageIndicator(data.cobertura_validacion),
+      "Normas procesadas con una decisión profesional guardada. No equivale al porcentaje del boletín leído.",
+      "Base: " + (bases.normas_validadas || 0) + " de " + data.normas_procesadas + " normas procesadas",
+    ],
+    [
+      "Derivación a revisión manual",
+      formatPercentageIndicator(data.tasa_revision_manual),
+      "Normas procesadas que el detector derivó a revisión humana.",
+      "Base: " + data.normas_procesadas + " normas procesadas",
+    ],
+    [
+      "Rendimiento de la revisión manual",
+      formatPercentageIndicator(data.rendimiento_revision_manual),
+      "Casos de revisión manual resueltos que resultaron relevantes.",
+      "Base: " + (bases.casos_revision_manual_validados || 0) + " casos resueltos",
+    ],
+  ], true);
+
+  renderMetricCards(indicatorExtraGrid, [
+    ["Días de uso", data.dias_uso, "", ""],
+    ["Alertas automáticas", data.relevantes, "", ""],
+    ["Casos de revisión manual", data.revision_manual, "", ""],
+    ["Relevantes desde revisión manual", data.relevantes_desde_revision_manual, "", ""],
     [
       "Precisión automática",
       formatPercentageIndicator(data.precision_automatica),
-      "Proporción de alertas automáticas validadas que resultaron relevantes.",
-      "Base: " + (bases.alertas_automaticas_validadas || 0) + " alertas validadas",
+      "Complemento del porcentaje de alertas descartadas, sobre la misma base.",
+      "Base: " + (bases.alertas_automaticas_validadas || 0) + " alertas automáticas con decisión",
     ],
     [
-      "Falsos positivos",
-      formatPercentageIndicator(data.tasa_falsos_positivos),
-      "Proporción de alertas automáticas validadas que se descartaron.",
-      "Base: " + (bases.alertas_automaticas_validadas || 0) + " alertas validadas",
-    ],
-    [
-      "Tasa de revisión manual",
-      formatPercentageIndicator(data.tasa_revision_manual),
-      "Parte de las normas procesadas que el detector derivó a revisión humana.",
-      "Base: " + data.normas_procesadas + " normas procesadas",
-    ],
-    [
-      "Rendimiento de revisión",
-      formatPercentageIndicator(data.rendimiento_revision_manual),
-      "Proporción de los casos revisados manualmente que resultaron relevantes.",
-      "Base: " + (bases.casos_revision_manual_validados || 0) + " casos resueltos",
-    ],
-    [
-      "Reducción de lectura",
+      "Normas excluidas de la selección principal",
       formatPercentageIndicator(data.reduccion_lectura),
-      "Porcentaje del boletín que quedó fuera de la lectura principal por las reglas automáticas.",
+      "Normas no relevantes o descartadas por el filtro estructural. No mide ahorro efectivo de lectura.",
       "Base: " + data.normas_procesadas + " normas procesadas",
     ],
-  ], true);
+    ["Control complementario", data.control_complementario, "", ""],
+  ]);
+
   indicatorBulletinsBody.innerHTML = data.boletines.length
     ? data.boletines.map((bulletin) => `
         <tr>
@@ -508,11 +547,50 @@ async function loadIndicators() {
           <td>${escapeHtml(formatDisplayDate(bulletin.fecha_publicacion))}</td>
           <td>${escapeHtml(bulletin.normas_procesadas)}</td>
           <td>${escapeHtml(bulletin.relevantes_confirmadas)}</td>
-          <td>${escapeHtml(bulletin.falsos_negativos)}</td>
+          <td>${escapeHtml(bulletin.omisiones_identificadas)}</td>
           <td>${escapeHtml(bulletin.control_complementario)}</td>
         </tr>
       `).join("")
     : '<tr><td colspan="6" class="empty-state">No utilizado durante este período.</td></tr>';
+}
+
+function renderConsistency(checks) {
+  const pending = checks.pendientes || [];
+  const completeWithPending = checks.completos_con_pendientes || [];
+  const contradictions = checks.contradicciones || [];
+  const blocks = [];
+
+  if (pending.length) {
+    blocks.push(
+      `<p class="consistency-notice__title">${pending.length === 1 ? "Hay 1 alerta sin decisión" : `Hay ${pending.length} alertas sin decisión`}:</p>` +
+      "<ul>" + pending.map((item) => {
+        const label = `${escapeHtml(item.nombre)} — BO ${escapeHtml(item.numero_boletin || "-")}, ${escapeHtml(formatDisplayDate(item.fecha_publicacion))}`;
+        return item.url_norma
+          ? `<li><a href="${escapeHtml(item.url_norma)}" target="_blank" rel="noopener">${label}</a></li>`
+          : `<li>${label}</li>`;
+      }).join("") + "</ul>"
+    );
+  }
+  if (completeWithPending.length) {
+    blocks.push(
+      '<p class="consistency-notice__title">Boletines marcados como completos que tienen alertas sin decisión:</p>' +
+      "<ul>" + completeWithPending.map((item) =>
+        `<li>BO ${escapeHtml(item.numero_boletin || "-")}, ${escapeHtml(formatDisplayDate(item.fecha_publicacion))}: ${escapeHtml(item.pendientes)} pendiente(s)</li>`
+      ).join("") + "</ul>"
+    );
+  }
+  if (contradictions.length) {
+    blocks.push(
+      '<p class="consistency-notice__title">Normas con decisiones distintas en distintos boletines (se usa la más reciente):</p>' +
+      "<ul>" + contradictions.map((item) =>
+        `<li>${escapeHtml(item.nombre)}: ` + item.decisiones.map((entry) =>
+          `BO ${escapeHtml(entry.numero_boletin || "-")} ${escapeHtml(entry.decision_manual === "RELEVANTE_CONFIRMADA" ? "relevante" : "no relevante")}`
+        ).join("; ") + "</li>"
+      ).join("") + "</ul>"
+    );
+  }
+  indicatorConsistency.innerHTML = blocks.join("");
+  indicatorConsistency.hidden = !blocks.length;
 }
 
 document.addEventListener("click", (event) => {

@@ -1,6 +1,6 @@
 # ADR-002 - Indicadores de desempeño y gobernanza de la configuración
 
-Estado: aceptado  
+Estado: aceptado; presentación y terminología actualizadas por ADR-007  
 Fecha: 2026-07-13
 
 ## Contexto
@@ -85,4 +85,5 @@ No calcular recall ni F1 hasta contar con un universo revisado de forma suficien
 
 ## Relación con otras decisiones
 
+- [ADR-007 - Omisiones identificadas y reorganización de indicadores](ADR-007-omisiones-identificadas-y-reorganizacion-de-indicadores.md): agrega el porcentaje de omisiones identificadas, renombra indicadores y mantiene la exclusión de recall y F1.
 - [ADR-001 - Registro semanal y revisión manual persistente](ADR-001-registro-semanal-revision-manual.md)

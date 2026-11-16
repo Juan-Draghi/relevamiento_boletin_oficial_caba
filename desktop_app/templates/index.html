@@ -119,7 +119,7 @@
             <details class="result-accordion">
               <summary>
                 <span>Normas no relevantes (<strong id="no-relevant-count">0</strong>)</span>
-                <span class="accordion-status" id="no-relevant-fn">0 falsos negativos</span>
+                <span class="accordion-status" id="no-relevant-fn">0 omisiones identificadas</span>
               </summary>
               <div class="accordion-content">
                 <div class="accordion-tools">
@@ -133,7 +133,7 @@
             <details class="result-accordion">
               <summary>
                 <span>Descartadas por filtro estructural (<strong id="discarded-count">0</strong>)</span>
-                <span class="accordion-status" id="discarded-fn">0 falsos negativos</span>
+                <span class="accordion-status" id="discarded-fn">0 omisiones identificadas</span>
               </summary>
               <div class="accordion-content">
                 <div class="accordion-tools">
@@ -209,22 +209,31 @@
 
         <div class="coverage-notice" id="indicator-coverage" role="status" hidden></div>
 
-        <section class="indicator-section" aria-labelledby="volume-heading">
+        <div class="consistency-notice" id="indicator-consistency" role="status" hidden></div>
+
+        <section class="indicator-section indicator-section--performance" aria-labelledby="main-heading">
           <div class="indicator-section__header">
-            <p class="section-kicker">Actividad registrada</p>
-            <h2 id="volume-heading">Volumen operativo</h2>
+            <p class="section-kicker">Evaluación de la selección</p>
+            <h2 id="main-heading">Indicadores principales</h2>
+            <p>Calculados sobre las decisiones profesionales registradas. Cuando no hay base suficiente, se informa N/D o No calculable.</p>
           </div>
-          <div class="metric-grid metric-grid--indicators" id="indicator-volume-grid"></div>
+          <div class="metric-grid metric-grid--indicators" id="indicator-main-grid"></div>
         </section>
 
-        <section class="indicator-section indicator-section--performance" aria-labelledby="performance-heading">
+        <section class="indicator-section" aria-labelledby="secondary-heading">
           <div class="indicator-section__header">
-            <p class="section-kicker">Calidad de la detección</p>
-            <h2 id="performance-heading">Indicadores de desempeño</h2>
-            <p>Las tasas usan únicamente decisiones profesionales registradas. Cuando la base no alcanza, se informa N/D.</p>
+            <p class="section-kicker">Actividad y revisión</p>
+            <h2 id="secondary-heading">Indicadores secundarios</h2>
           </div>
-          <div class="metric-grid metric-grid--performance" id="indicator-performance-grid"></div>
+          <div class="metric-grid metric-grid--indicators" id="indicator-secondary-grid"></div>
         </section>
+
+        <details class="result-accordion indicator-extra">
+          <summary><span>Datos complementarios</span></summary>
+          <div class="accordion-content">
+            <div class="metric-grid metric-grid--indicators" id="indicator-extra-grid"></div>
+          </div>
+        </details>
 
         <section class="indicator-bulletins">
           <div class="results-header">
@@ -232,7 +241,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Boletín</th><th>Fecha</th><th>Normas procesadas</th><th>Relevantes confirmadas</th><th>Falsos negativos</th><th>Control</th></tr></thead>
+              <thead><tr><th>Boletín</th><th>Fecha</th><th>Normas procesadas</th><th>Relevantes confirmadas</th><th>Omisiones identificadas</th><th>Control</th></tr></thead>
               <tbody id="indicator-bulletins-body"></tbody>
             </table>
           </div>

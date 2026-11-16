@@ -166,9 +166,9 @@ Precauciones:
 - Una consulta repetida debe actualizar el mismo ejemplar sin duplicar normas ni conteos.
 - La categoria automatica original es inmutable. La decision profesional se guarda en un campo separado.
 - Las decisiones admitidas son `SIN_REVISAR`, `RELEVANTE_CONFIRMADA` y `NO_RELEVANTE_CONFIRMADA`.
-- `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` deben permanecer ocultas en acordeones y desplegarse solo para revisar posibles falsos negativos.
-- Un falso negativo es una norma originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` confirmada como relevante. Requiere una evidencia breve.
-- Un caso `REVISION_MANUAL` confirmado como relevante no es un falso negativo.
+- `NO_RELEVANTE` y `DESCARTADA_FILTRO_ESTRUCTURAL` deben permanecer ocultas en acordeones y desplegarse solo para revisar posibles omisiones.
+- Una omision identificada (antes llamada falso negativo) es una norma originalmente `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` confirmada como relevante. Requiere una evidencia breve. En interfaz y documentacion usar "omisiones identificadas".
+- Un caso `REVISION_MANUAL` confirmado como relevante no es una omision.
 - El control complementario admite `PENDIENTE`, `PARCIAL` y `COMPLETO`; la interfaz debe confirmar visualmente el guardado.
 - Al marcar `COMPLETO`, si quedan normas `RELEVANTE` o `REVISION_MANUAL` en `SIN_REVISAR`, no guardar sin antes mostrar la lista de pendientes; el usuario puede volver a revisar o guardar igual. Las categorias de los acordeones no generan aviso.
 - No agregar observaciones opcionales a las decisiones ordinarias ni al cierre del ejemplar.
@@ -176,15 +176,14 @@ Precauciones:
 - Los indicadores se calculan desde los JSON guardados; no persistir totales derivados.
 - Los indicadores pueden consultarse por semana o por rango de fechas de publicacion. En un rango, cada norma se cuenta una sola vez (primera aparicion) y los porcentajes se calculan sobre los totales del rango, nunca promediando semanas. Un rango sin boletines se informa como sin registros, no como cero.
 - Mantener separados el volumen operativo y los indicadores de desempeno.
-- Definiciones vigentes:
-  - cobertura de validacion = decisiones registradas / total procesado;
-  - precision automatica = relevantes automaticas confirmadas / alertas automaticas validadas;
-  - tasa de falsos positivos = alertas automaticas descartadas / alertas automaticas validadas;
-  - tasa de revision manual = casos `REVISION_MANUAL` / total procesado;
-  - rendimiento de revision manual = relevantes confirmadas / casos `REVISION_MANUAL` resueltos;
-  - reduccion de lectura = (`NO_RELEVANTE` + `DESCARTADA_FILTRO_ESTRUCTURAL`) / total procesado.
+- Definiciones vigentes (ADR-007). Entre parentesis, la clave tecnica del calculo:
+  - indicadores principales: relevantes confirmadas; omisiones identificadas; porcentaje de omisiones identificadas = omisiones / relevantes confirmadas (`porcentaje_omisiones`); porcentaje de alertas automaticas descartadas = alertas `RELEVANTE` descartadas / alertas `RELEVANTE` con decision (`tasa_falsos_positivos`);
+  - indicadores secundarios: normas procesadas; normas con decision registrada = decisiones / total procesado (`cobertura_validacion`); derivacion a revision manual = casos `REVISION_MANUAL` / total procesado (`tasa_revision_manual`); rendimiento de revision manual = relevantes confirmadas / casos `REVISION_MANUAL` resueltos;
+  - datos complementarios: precision automatica (complemento de alertas descartadas) y normas excluidas de la seleccion principal = (`NO_RELEVANTE` + `DESCARTADA_FILTRO_ESTRUCTURAL`) / total procesado (`reduccion_lectura`), sin atribuirle ahorro de lectura.
+- El porcentaje de omisiones es `No calculable` sin relevantes confirmadas y provisional si algun boletin del alcance no tiene control `COMPLETO` o quedan alertas sin decision.
+- En normas repetidas en varios boletines, usar la decision registrada en cualquiera de sus copias; si difieren, usar la mas reciente e informar la contradiccion.
 - Informar `N/D` cuando no exista un denominador suficiente.
-- No calcular recall ni F1 hasta contar con un universo completamente revisado que permita conocer los falsos negativos de forma defendible.
+- No calcular recall ni F1 hasta contar con un universo completamente revisado que permita conocer las omisiones de forma defendible. El porcentaje de omisiones identificadas no es recall.
 - Tratar `data/seguimiento/*.json` como datos reales del usuario: no borrarlos, sobrescribirlos, normalizarlos ni usarlos para pruebas destructivas.
 - Para pruebas manuales o de navegador, usar una copia temporal y verificar su eliminacion al finalizar.
 - No agregar, commitear ni subir a Git los JSON semanales reales de `data/seguimiento`.

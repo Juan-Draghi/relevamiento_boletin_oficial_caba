@@ -33,8 +33,12 @@ class DesktopAppTests(unittest.TestCase):
         self.assertIn('id="bulletin-control"', html)
         self.assertIn('type="checkbox" value="PENDIENTE"', html)
         self.assertIn('id="bulletin-save-status"', html)
-        self.assertIn('id="indicator-volume-grid"', html)
-        self.assertIn('id="indicator-performance-grid"', html)
+        self.assertIn('id="indicator-main-grid"', html)
+        self.assertIn('id="indicator-secondary-grid"', html)
+        self.assertIn('id="indicator-extra-grid"', html)
+        self.assertIn('id="indicator-consistency"', html)
+        self.assertIn("Omisiones identificadas", html)
+        self.assertNotIn("falsos negativos", html)
         self.assertIn('class="results-count"', html)
         self.assertIn('0 normas', html)
         self.assertNotIn('id="bulletin-observations"', html)
@@ -46,10 +50,12 @@ class DesktopAppTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("metric-card__description", app_js)
-        self.assertIn(
-            "Porcentaje de normas procesadas que ya tienen una decisión profesional.",
-            app_js,
-        )
+        self.assertIn("Normas con decisión registrada", app_js)
+        self.assertIn("No equivale al porcentaje del boletín leído.", app_js)
+        self.assertIn("No mide normas que nunca ingresaron.", app_js)
+        self.assertIn("Normas excluidas de la selección principal", app_js)
+        self.assertIn("No mide ahorro efectivo de lectura.", app_js)
+        self.assertNotIn("Reducción de lectura", app_js)
 
     def test_configuration_endpoint_is_disabled(self):
         response = self.client.post("/api/config", data={"KEYWORDS": "prueba"})
@@ -64,7 +70,8 @@ class DesktopAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload["control_complementario"], "No utilizado")
         self.assertEqual(payload["normas_procesadas"], 0)
-        self.assertEqual(payload["falsos_negativos"], "N/D")
+        self.assertEqual(payload["omisiones_identificadas"], 0)
+        self.assertEqual(payload["porcentaje_omisiones"], "No calculable")
         self.assertEqual(payload["cobertura_validacion"], "No utilizado")
         self.assertEqual(payload["precision_automatica"], "N/D")
 
