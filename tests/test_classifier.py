@@ -251,6 +251,40 @@ class ClassifierTests(unittest.TestCase):
 
         self.assertEqual(result.categoria_salida, NO_RELEVANTE)
 
+    def test_individual_consulta_obligatoria_is_not_relevant(self):
+        # Caso real: BO 7415, acto individual de DGIUR sobre un inmueble.
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Disposición",
+                "nombre": "Disposición N° 1251/DGIUR/26",
+                "sumario": (
+                    "Aprueba la Consulta Obligatoria de Obra Nueva a desarrollarse en el "
+                    "inmueble sito en Almirante F. J. Segui 1227/29 y autoriza Localización "
+                    "de Usos del Suelo"
+                ),
+                "organismo": "Jefatura de Gabinete de Ministros",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, NO_RELEVANTE)
+
+    def test_consulta_obligatoria_procedure_is_relevant_by_conditional_keyword(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 999/SECGDU/26",
+                "sumario": "Aprueba el procedimiento para la tramitación de la Consulta Obligatoria",
+                "organismo": "Jefatura de Gabinete de Ministros",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, RELEVANTE)
+        self.assertIn("keyword_condicional_sumario: consulta obligatoria", result.motivo_deteccion)
+
     def test_short_summary_alone_is_not_manual_review(self):
         result = classify_norma(
             {

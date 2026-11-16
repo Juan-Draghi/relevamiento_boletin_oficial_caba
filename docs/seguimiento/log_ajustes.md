@@ -359,12 +359,69 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 **Referencias**
 
 - Issue: no corresponde.
-- Commit: pendiente.
+- Commit: `a1ac7f1`.
 - ADR: no corresponde.
 
 **Revisar resultado**
 
 - Período: boletines posteriores al 2026-11-16, en particular la aprobación definitiva de la ley tras la audiencia pública.
+- Resultado: pendiente.
+
+## LOG-2026-11-16 - Convertir «consulta obligatoria» en keyword condicional
+
+**Evidencia**
+
+- Período o ejemplar: 2026-07-13 a 2026-11-06, 84 boletines; informe `data/informes_estrategias/20261116_182711_terminos.md`.
+- Norma o conjunto de casos: 66 disposiciones de DGIUR con "consulta obligatoria" en el sumario, todas referidas a una parcela o inmueble concreto ("Aprueba la Consulta Obligatoria…" 56, "Deniega la Consulta Obligatoria…" 8, "Deja sin efecto…" 1, "Deniega la solicitud…" 1). Ejemplo: Disposición N° 1251/DGIUR/26 (BO 7415).
+- Categoría obtenida y decisión profesional: `RELEVANTE` por `keyword_sumario: consulta obligatoria`; las 66 confirmadas como `NO_RELEVANTE_CONFIRMADA`.
+- Resultado observado: 0 relevantes en 66 casos evaluados; tasa máxima de relevantes 3/66 = 4,5 %. Cumple el criterio de evidencia mínima (`docs/seguimiento/criterio_evidencia_keywords.md`).
+
+**Problema detectado**
+
+- Tipo: falso positivo.
+- Descripción: la keyword directa selecciona sistemáticamente actos individuales de DGIUR sin interés para el servicio de referencia.
+
+**Cambio realizado**
+
+- Archivo o parámetro: `config/config_keywords.json` — `KEYWORDS_REQUIEREN_ACCION_NORMATIVA`.
+- Operación: agregar.
+- Valor anterior: no corresponde (el término se conserva en `KEYWORDS`).
+- Valor nuevo: `consulta obligatoria`.
+- Modificación: la keyword pasa de directa a condicional; insertada en orden alfabético al inicio de la lista.
+
+**Motivo de incorporación o modificación**
+
+- Justificación: se eligió la opción intermedia del criterio de evidencia en lugar de eliminar el término. Como condicional sólo clasifica como `RELEVANTE` con verbo de acción y contexto normativo (régimen, procedimiento, requisitos, reglamento, referencia a otra norma, etc.), lo que conserva la detección de normas generales sobre el trámite.
+
+**Comparación previa**
+
+- Período y base: 2026-07-13 a 2026-11-06, 84 boletines, 27113 normas.
+- Informe: `data/informes_estrategias/20261116_183633_comparacion.md` (no versionado); alternativa de eliminación en `20261116_183648_comparacion.md` (64 irrelevantes evitadas, mismas relevantes perdidas).
+- Relevantes recuperadas / perdidas: 0 / 0 de 13.
+- Irrelevantes evitadas / añadidas (decisión + lectura completa): 63 de 518 (12,2 %) / 0 de 26582.
+- Sin información afectadas: 0.
+- Siguen seleccionadas: Disposición N° 2250/DGIUR/26 (cumple la condición por citar otra disposición) y Disposiciones N° 1329 y 1497/DGIUR/26 (por "objeto territorial" y "urbanización").
+
+**Validación**
+
+- Prueba específica: `test_individual_consulta_obligatoria_is_not_relevant` (sumario real de la Disposición N° 1251/DGIUR/26) y `test_consulta_obligatoria_procedure_is_relevant_by_conditional_keyword` (sumario hipotético de procedimiento general) en `tests/test_classifier.py`.
+- Suite completa: `python -m unittest discover -s tests`, 80 pruebas; validador de configuración del skill.
+- Resultado: favorable; configuración válida y todas las pruebas superadas.
+
+**Efecto esperado**
+
+- Resultado esperado: las aprobaciones y denegaciones de Consulta Obligatoria por inmueble dejan de llegar a la lista principal; las normas generales sobre el trámite siguen como `RELEVANTE`.
+- Riesgo o efecto colateral observado: actos individuales que citen otra norma (como la Disposición N° 2250/DGIUR/26) siguen seleccionados. Una norma general redactada sin verbo de acción ni vocabulario normativo reconocido no se detectaría por esta vía.
+
+**Referencias**
+
+- Issue: no corresponde.
+- Commit: pendiente.
+- ADR: no corresponde.
+
+**Revisar resultado**
+
+- Período: boletines posteriores al 2026-11-16; revisar el término en el informe por término de enero de 2027.
 - Resultado: pendiente.
 
 ## Plantilla
