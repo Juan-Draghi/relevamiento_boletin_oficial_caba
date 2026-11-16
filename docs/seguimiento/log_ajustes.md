@@ -530,12 +530,70 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 **Referencias**
 
 - Issue: no corresponde.
-- Commit: pendiente.
+- Commit: `9da5afd`.
 - ADR: no corresponde.
 
 **Revisar resultado**
 
 - Período: boletines posteriores al 2026-11-16; revisar el término en el informe por término de enero de 2027.
+- Resultado: pendiente.
+
+## LOG-2026-11-16 - Convertir «aptitud ambiental» y «certificado de aptitud ambiental» en keywords condicionales
+
+**Evidencia**
+
+- Período o ejemplar: 2026-07-13 a 2026-11-06, 84 boletines; informe `data/informes_estrategias/20261116_182711_terminos.md`.
+- Norma o conjunto de casos: 35 normas, las mismas para ambas keywords, casi todas resoluciones de APRA sobre establecimientos concretos (renovación, modificación, emisión o baja de certificados; convocatorias a audiencia pública por proyectos puntuales). Ejemplo: Resolución N° 229/APRA/26 (BO 7422). Otras 29 disposiciones de DGEVA con la misma frase ya se descartan por filtro estructural.
+- Categoría obtenida y decisión profesional: `RELEVANTE` por `keyword_sumario: aptitud ambiental` y `certificado de aptitud ambiental`; las 35 confirmadas como `NO_RELEVANTE_CONFIRMADA`.
+- Resultado observado: 0 relevantes en 35 casos evaluados; tasa máxima de relevantes 3/35 = 8,6 %. Cumple el criterio de evidencia mínima (`docs/seguimiento/criterio_evidencia_keywords.md`).
+
+**Problema detectado**
+
+- Tipo: falso positivo.
+- Descripción: las keywords directas seleccionan actos individuales de gestión ambiental. Como coinciden siempre en las mismas normas, ajustar sólo una no tiene efecto.
+
+**Cambio realizado**
+
+- Archivo o parámetro: `config/config_keywords.json` — `KEYWORDS_REQUIEREN_ACCION_NORMATIVA`.
+- Operación: agregar (dos valores).
+- Valor anterior: no corresponde (ambos términos se conservan en `KEYWORDS`).
+- Valor nuevo: `aptitud ambiental` y `certificado de aptitud ambiental`.
+- Modificación: ambas keywords pasan de directas a condicionales; insertadas en orden alfabético al inicio de la lista.
+
+**Motivo de incorporación o modificación**
+
+- Justificación: se eligió la opción intermedia del criterio de evidencia en lugar de eliminar los términos, con el mismo efecto medido. Como condicionales conservan normas generales sobre el certificado con verbo de acción y contexto normativo. La cobertura temática se complementa con "evaluación ambiental", "categorización ambiental", "código ambiental" y APRA como organismo prioritario, que no cambian.
+
+**Comparación previa**
+
+- Período y base: 2026-07-13 a 2026-11-06, 84 boletines, 27113 normas; configuración vigente ya con los ajustes condicionales anteriores del 2026-11-16.
+- Informe: `data/informes_estrategias/20261116_185011_comparacion.md` (no versionado); alternativa de eliminación en `20261116_185027_comparacion.md` (mismo resultado).
+- Relevantes recuperadas / perdidas: 0 / 0 de 13.
+- Irrelevantes evitadas / añadidas (decisión + lectura completa): 18 de 299 (6,0 %) / 0 de 26801.
+- Pasan de `RELEVANTE` a `REVISION_MANUAL`: 9 (APRA como organismo prioritario más verbo de acción).
+- Sin información afectadas: 0.
+- Siguen como `RELEVANTE` por otra regla: 8 ("impacto ambiental" 7, término en observación; "objeto territorial" 1).
+
+**Validación**
+
+- Prueba específica: `test_individual_environmental_certificate_renewal_is_not_relevant` (sumario real de la Resolución N° 229/APRA/26) y `test_environmental_certificate_procedure_is_relevant_by_conditional_keyword` (sumario hipotético de procedimiento general) en `tests/test_classifier.py`.
+- Suite completa: `python -m unittest discover -s tests`, 86 pruebas; validador de configuración del skill.
+- Resultado: favorable; configuración válida y todas las pruebas superadas.
+
+**Efecto esperado**
+
+- Resultado esperado: los certificados individuales dejan de llegar como `RELEVANTE`; parte de ellos pasa a revisión manual por APRA. Las normas generales sobre el certificado siguen como `RELEVANTE`.
+- Riesgo o efecto colateral observado: 9 casos individuales siguen en la lista principal como `REVISION_MANUAL`. Una norma general redactada sin verbo de acción ni vocabulario normativo reconocido no se detectaría por esta vía.
+
+**Referencias**
+
+- Issue: no corresponde.
+- Commit: pendiente.
+- ADR: no corresponde.
+
+**Revisar resultado**
+
+- Período: boletines posteriores al 2026-11-16; revisar los términos e "impacto ambiental" en el informe por término de enero de 2027.
 - Resultado: pendiente.
 
 ## Plantilla

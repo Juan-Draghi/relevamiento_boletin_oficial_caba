@@ -351,6 +351,42 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.categoria_salida, RELEVANTE)
         self.assertIn("keyword_condicional_sumario: superficie", result.motivo_deteccion)
 
+    def test_individual_environmental_certificate_renewal_is_not_relevant(self):
+        # Caso real: BO 7422, renovacion de un certificado de APRA.
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 229/APRA/26",
+                "sumario": "Renueva el Certificado de Aptitud Ambiental N° 21.791",
+                "organismo": "Vicejefatura de Gobierno",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, NO_RELEVANTE)
+
+    def test_environmental_certificate_procedure_is_relevant_by_conditional_keyword(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 999/APRA/26",
+                "sumario": (
+                    "Aprueba el procedimiento para la emisión del Certificado de "
+                    "Aptitud Ambiental"
+                ),
+                "organismo": "Vicejefatura de Gobierno",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, RELEVANTE)
+        self.assertIn(
+            "keyword_condicional_sumario: certificado de aptitud ambiental",
+            result.motivo_deteccion,
+        )
+
     def test_short_summary_alone_is_not_manual_review(self):
         result = classify_norma(
             {
