@@ -119,6 +119,19 @@ La ficha previa debe contener:
 
 Un caso `REVISION_MANUAL` confirmado relevante no es un falso negativo. Un falso negativo requiere categoría original `NO_RELEVANTE` o `DESCARTADA_FILTRO_ESTRUCTURAL` y confirmación profesional como relevante.
 
+### Evidencia mínima para retirar o restringir un término
+
+Criterio adoptado el 2026-11-16 (detalle y calendario en `docs/seguimiento/criterio_evidencia_keywords.md`).
+
+Con 0 relevantes en n casos evaluados, la tasa real de relevantes puede estimarse, con 95 % de confianza, en no más de **3/n** (*regla de tres*): 30 casos → 10 %; 60 → 5 %; 100 → 3 %. Casos evaluados = relevantes + no relevantes por decisión + no relevantes según la lectura completa.
+
+- **Retiro o restricción:** sólo con al menos 30 casos evaluados y ninguno relevante. Informar n y 3/n en la ficha.
+- **Menos de 30 casos evaluados:** término en observación; no proponer su retiro.
+- **Términos estacionales o anuales:** no retirarlos sin un ciclo anual completo de registros.
+- **Agregar términos o patrones:** no requiere esperar; cada omisión identificada con su evidencia alcanza.
+- **Términos amplios:** antes de eliminar, evaluar convertirlos en condicionales o reemplazarlos por una frase más específica.
+- **Términos que aportan relevantes:** no evaluar su precisión con pocas relevantes confirmadas en el período.
+
 ## 4. Evaluación de impacto
 
 Antes de proponer:

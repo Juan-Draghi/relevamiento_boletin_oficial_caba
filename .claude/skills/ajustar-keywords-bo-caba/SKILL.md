@@ -58,9 +58,15 @@ Usar cuando el usuario pide revisar el desempeño de los términos en un períod
    - candidatos a revisión con su cantidad de casos y ejemplos: un 100 % no relevante es una señal para revisar, no una orden de retiro; 2 de 2 no equivale a 150 de 150;
    - términos que aportaron relevantes;
    - términos con coincidencias pero sin base de evaluación: no asignarles 0 % ni 100 %.
-3. Distinguir **coincidencia** de **efecto**: la columna «Decide / sigue» indica cuántas normas dejarían la lista principal si se retira el término y cuántas seguirían por otra regla.
-4. Proponer cambios concretos sólo con evidencia. Usar las omisiones identificadas para proponer mejoras de recuperación, sin inventar decisiones profesionales.
-5. Tratar cada propuesta como un ajuste: comparación previa, ficha, aprobación y registro. Una aprobación de la revisión general no aprueba cambios concretos.
+3. Aplicar el criterio de evidencia mínima (sección 3 de la referencia y `docs/seguimiento/criterio_evidencia_keywords.md`):
+   - proponer retirar o restringir un término sólo con **al menos 30 casos evaluados y ninguno relevante**; informar n y la tasa máxima de relevantes 3/n;
+   - con menos de 30 casos evaluados, informar el término como «en observación» y no proponer su retiro;
+   - no proponer el retiro de términos ligados a normas estacionales o anuales sin un ciclo anual completo de registros;
+   - para términos amplios con muchas alertas irrelevantes, evaluar primero convertirlos en condicionales o reemplazarlos por una frase más específica;
+   - no evaluar la precisión de los términos que aportan relevantes mientras haya pocas relevantes confirmadas en el período.
+4. Distinguir **coincidencia** de **efecto**: la columna «Decide / sigue» indica cuántas normas dejarían la lista principal si se retira el término y cuántas seguirían por otra regla.
+5. Proponer cambios concretos sólo con evidencia. Usar las omisiones identificadas para proponer mejoras de recuperación, sin inventar decisiones profesionales.
+6. Tratar cada propuesta como un ajuste: comparación previa, ficha, aprobación y registro. Una aprobación de la revisión general no aprueba cambios concretos.
 
 ## Seleccionar el tipo correcto
 

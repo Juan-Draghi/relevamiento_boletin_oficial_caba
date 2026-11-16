@@ -163,6 +163,7 @@ Precauciones:
 - La app puede generar backups `config/config_keywords.backup_*.json`; no versionarlos.
 - Todo ajuste de configuracion requiere una comparacion previa con `scripts/revisar_estrategias.py comparar`, incluida en la ficha. Para revisar estrategias de un periodo usar `scripts/revisar_estrategias.py terminos`. Ambos modos solo leen.
 - Los informes de `data/informes_estrategias/` contienen sumarios reales: no versionarlos.
+- Respetar `docs/seguimiento/criterio_evidencia_keywords.md`: proponer retirar o restringir un termino solo con al menos 30 casos evaluados sin relevantes (informar n y la tasa maxima 3/n); no retirar terminos estacionales sin un ciclo anual completo; agregar terminos no requiere esperar.
 - La unica version mantenida del skill es `.claude/skills/ajustar-keywords-bo-caba/`. La copia de `~/.codex/skills/ajustar-keywords-bo-caba` solo redirige a ella.
 
 ## Registro operativo, revision manual e indicadores

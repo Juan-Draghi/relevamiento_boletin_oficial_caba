@@ -190,6 +190,8 @@ Referencia profesional usada: decisión registrada; las normas ocultas sin marca
 
 Los informes (Markdown y CSV) se guardan en `data/informes_estrategias/`, carpeta excluida de Git porque contiene sumarios reales. El skill `ajustar-keywords-bo-caba` usa este script como comparación previa obligatoria de todo ajuste.
 
+La evidencia mínima para proponer el retiro o la restricción de un término (al menos 30 casos evaluados sin relevantes, ciclo anual completo para términos estacionales) está definida en [criterio_evidencia_keywords.md](docs/seguimiento/criterio_evidencia_keywords.md).
+
 ## Instalación
 
 Requisitos:
@@ -277,6 +279,7 @@ La suite cubre el detector, la persistencia semanal, deduplicación, decisiones 
 - [Historial de evolución del detector](docs/historial_evolucion.md)
 - [Registro operativo e indicadores](docs/seguimiento/registro_operativo.md)
 - [Log de ajustes derivados](docs/seguimiento/log_ajustes.md)
+- [Criterio de evidencia mínima para revisar keywords](docs/seguimiento/criterio_evidencia_keywords.md)
 - [ADR-001: registro semanal y revisión manual](docs/adr/ADR-001-registro-semanal-revision-manual.md)
 - [ADR-002: indicadores y gobernanza de configuración](docs/adr/ADR-002-indicadores-y-gobernanza-configuracion.md)
 - [ADR-003: datos operativos fuera del repositorio de código](docs/adr/ADR-003-datos-operativos-fuera-del-repositorio.md)
