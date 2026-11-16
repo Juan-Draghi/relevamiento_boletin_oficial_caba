@@ -212,6 +212,45 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.categoria_salida, RELEVANTE)
         self.assertIn("keyword_sumario: demolición", result.motivo_deteccion)
 
+    def test_clubes_de_barrio_regularization_regime_is_relevant(self):
+        # Omision identificada: BO 7458, Ley de Aprobacion Inicial N° 1740/LCABA/26.
+        result = classify_norma(
+            {
+                "poder": "Poder Legislativo",
+                "tipo_norma": "Ley de Aprobación Inicial",
+                "nombre": "Ley de Aprobación Inicial N° 1740/LCABA/26",
+                "sumario": (
+                    "Crea el Régimen Especial de Adecuación y Regularización "
+                    "para Clubes de Barrio."
+                ),
+                "organismo": "Legislatura de la Ciudad de Buenos Aires",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, RELEVANTE)
+        self.assertIn(
+            "keyword_sumario: régimen especial de adecuación y regularización",
+            result.motivo_deteccion,
+        )
+
+    def test_club_subsidy_rendition_is_not_relevant(self):
+        result = classify_norma(
+            {
+                "poder": "Poder Ejecutivo",
+                "tipo_norma": "Resolución",
+                "nombre": "Resolución N° 360/SECD/26",
+                "sumario": (
+                    "Aprueba la rendición de cuentas del subsidio otorgado "
+                    "realizada por el Club Atlético Huracán"
+                ),
+                "organismo": "Jefatura de Gabinete de Ministros",
+            },
+            self.config,
+        )
+
+        self.assertEqual(result.categoria_salida, NO_RELEVANTE)
+
     def test_short_summary_alone_is_not_manual_review(self):
         result = classify_norma(
             {

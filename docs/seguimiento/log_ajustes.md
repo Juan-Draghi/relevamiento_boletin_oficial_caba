@@ -310,6 +310,63 @@ Las entradas anteriores a la creación de este archivo fueron reconstruidas el 2
 - Período: próxima norma que cite la Resolución 227/SECGDU/26.
 - Resultado: pendiente.
 
+## LOG-2026-11-16 - Agregar keyword «régimen especial de adecuación y regularización»
+
+**Evidencia**
+
+- Período o ejemplar: BO 7458; detectada en la revisión de estrategias del período 2026-07-13 a 2026-11-06 (`data/informes_estrategias/20261116_182711_terminos.md`).
+- Norma o conjunto de casos: Ley de Aprobación Inicial N° 1740/LCABA/26 (Poder Legislativo), cuyo sumario es "Crea el Régimen Especial de Adecuación y Regularización para Clubes de Barrio.".
+- Categoría obtenida y decisión profesional: `NO_RELEVANTE`, confirmada como `RELEVANTE_CONFIRMADA`, con la evidencia "Crea un régimen especial para regularizar la situación edilicia de clubes de barrio y entidades deportivas.".
+- Resultado observado: ninguna keyword coincidió; "regularización de obras" y "regularización de construcciones" no cubren esta redacción.
+
+**Problema detectado**
+
+- Tipo: falso negativo (omisión identificada).
+- Descripción: un régimen de regularización edilicia, pertinente para el ejercicio profesional, quedó fuera de la lista principal.
+
+**Cambio realizado**
+
+- Archivo o parámetro: `config/config_keywords.json` — `KEYWORDS`.
+- Operación: agregar.
+- Valor anterior: no corresponde.
+- Valor nuevo: `régimen especial de adecuación y regularización`.
+- Modificación: keyword directa (no condicional), insertada en orden alfabético después de "régimen de escuelas seguras de gestión privada".
+
+**Motivo de incorporación o modificación**
+
+- Justificación: la frase nombra el régimen de regularización edilicia, que es el objeto relevante. Se prefirió a la alternativa "clubes de barrio", que en el histórico tuvo el mismo efecto, porque esta última podría activarse con programas o subsidios a clubes ajenos al alcance (inferencia: en el período hubo unas 30 resoluciones de SECD sobre subsidios, inscripciones y rendiciones de clubes, aunque ninguna con la frase exacta).
+
+**Comparación previa**
+
+- Período y base: 2026-07-13 a 2026-11-06, 84 boletines, 27113 normas.
+- Informe: `data/informes_estrategias/20261116_183117_comparacion.md` (no versionado); alternativa descartada en `20261116_183133_comparacion.md`.
+- Relevantes recuperadas / perdidas: 1 de 1 / 0 de 12.
+- Irrelevantes evitadas / añadidas (decisión + lectura completa): 0 de 518 / 0 de 26582.
+- Sin información afectadas: 0.
+- Siguen seleccionadas por otra regla (retiros): no corresponde.
+
+**Validación**
+
+- Prueba específica: `test_clubes_de_barrio_regularization_regime_is_relevant` (sumario real, categoría y motivo) y `test_club_subsidy_rendition_is_not_relevant` (Resolución N° 360/SECD/26, control negativo) en `tests/test_classifier.py`.
+- Suite completa: `python -m unittest discover -s tests`, 78 pruebas; validador de configuración del skill.
+- Resultado: favorable; configuración válida y todas las pruebas superadas.
+
+**Efecto esperado**
+
+- Resultado esperado: la aprobación definitiva de la ley y las normas que mencionen el régimen con esa denominación se clasifican como `RELEVANTE` por `keyword_sumario`.
+- Riesgo o efecto colateral observado: sin sobrecaptura en el histórico. Limitación: si la ley definitiva o su reglamentación cambian la denominación del régimen, la frase no las detecta; cuando la ley tenga número definitivo, evaluar un patrón en `LISTA_NORMAS_CURADAS` como ajuste separado.
+
+**Referencias**
+
+- Issue: no corresponde.
+- Commit: pendiente.
+- ADR: no corresponde.
+
+**Revisar resultado**
+
+- Período: boletines posteriores al 2026-11-16, en particular la aprobación definitiva de la ley tras la audiencia pública.
+- Resultado: pendiente.
+
 ## Plantilla
 
 ## LOG-AAAA-MM-DD - Título del ajuste
