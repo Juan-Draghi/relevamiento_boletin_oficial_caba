@@ -23,6 +23,8 @@ Si un término tuvo **0 relevantes en n casos evaluados**, la tasa real de relev
 
 Casos evaluados = relevantes + no relevantes por decisión + no relevantes según la lectura completa. Las normas sin información no cuentan.
 
+El informe por término calcula este valor en la columna **Tasa máx. (3/n)** y clasifica cada término en la columna **Evidencia**: «Cumple el mínimo» (sección «Candidatos a revisión»), «En observación», «Aporta relevantes» o «Sin base».
+
 ## Reglas
 
 1. **Retirar o restringir un término:** proponerlo sólo con **al menos 30 casos evaluados y ninguno relevante** (tasa máxima cercana al 10 %). Informar siempre n y la tasa máxima 3/n.

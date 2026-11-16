@@ -19,10 +19,15 @@ from bo_detector.review_store import (
     update_bulletin_review,
 )
 from bo_detector.strategy_review import (
+    EVIDENCIA_APORTA_RELEVANTES,
+    EVIDENCIA_CUMPLE_MINIMO,
+    EVIDENCIA_EN_OBSERVACION,
+    EVIDENCIA_SIN_BASE,
     REF_NO_RELEVANTE_LECTURA,
     REF_SIN_INFORMACION,
     apply_proposal,
     compare_configs,
+    evidence_status,
     load_period_norms,
     term_report,
 )
@@ -94,6 +99,40 @@ class StrategyReviewTests(StoreTestCase):
         self.assertEqual(habilitacion["decide_seleccion"], 2)
         self.assertEqual(len(habilitacion["ejemplos"]), 2)
         self.assertFalse(row_for(rows, "demolición")["candidato_revision"])
+
+    def test_evidence_status_follows_minimum_criterion(self):
+        cases = [
+            ((0, 0), (EVIDENCIA_SIN_BASE, None)),
+            ((1, 40), (EVIDENCIA_APORTA_RELEVANTES, None)),
+            ((0, 29), (EVIDENCIA_EN_OBSERVACION, 10.3)),
+            ((0, 30), (EVIDENCIA_CUMPLE_MINIMO, 10.0)),
+            ((0, 128), (EVIDENCIA_CUMPLE_MINIMO, 2.3)),
+            ((0, 2), (EVIDENCIA_EN_OBSERVACION, 100.0)),
+        ]
+        for (relevant, evaluable), expected in cases:
+            with self.subTest(relevant=relevant, evaluable=evaluable):
+                self.assertEqual(evidence_status(relevant, evaluable), expected)
+
+    def test_term_with_few_cases_is_in_observation(self):
+        period = self.build(
+            [record(1, RELEVANTE, "Otorga habilitación a un local")],
+            {1: NO_RELEVANTE_CONFIRMADA},
+        )
+
+        habilitacion = row_for(term_report(period, config_from_dict(RAW_CONFIG)), "habilitación")
+
+        self.assertEqual(habilitacion["estado_evidencia"], EVIDENCIA_EN_OBSERVACION)
+        self.assertEqual(habilitacion["tasa_maxima_relevantes"], 100.0)
+
+    def test_term_with_thirty_cases_meets_minimum(self):
+        records = [record(i, RELEVANTE, f"Otorga habilitación al local {i}") for i in range(1, 31)]
+        period = self.build(records, {i: NO_RELEVANTE_CONFIRMADA for i in range(1, 31)})
+
+        habilitacion = row_for(term_report(period, config_from_dict(RAW_CONFIG)), "habilitación")
+
+        self.assertEqual(habilitacion["evaluables"], 30)
+        self.assertEqual(habilitacion["estado_evidencia"], EVIDENCIA_CUMPLE_MINIMO)
+        self.assertEqual(habilitacion["tasa_maxima_relevantes"], 10.0)
 
     def test_term_without_decisions_has_no_base(self):
         period = self.build([record(1, RELEVANTE, "Otorga habilitación a un local")], {}, complete=False)
@@ -246,7 +285,11 @@ class CommandLineTests(StoreTestCase):
         self.assertEqual(exit_code, 0)
         report = next(self.output_dir.glob("*_terminos.md")).read_text(encoding="utf-8")
         self.assertIn("## Candidatos a revisión", report)
-        self.assertIn("habilitación", report)
+        self.assertIn("## En observación", report)
+        self.assertIn("Tasa máx. (3/n)", report)
+        # Un solo caso evaluado: queda en observacion, no como candidato.
+        observation_section = report.split("## En observación")[1].split("## Términos con relevantes")[0]
+        self.assertIn("habilitación", observation_section)
 
     def test_output_inside_records_folder_is_refused(self):
         exit_code = revisar_estrategias.main(

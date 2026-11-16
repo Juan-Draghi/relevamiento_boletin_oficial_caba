@@ -43,6 +43,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from bo_detector.config import DEFAULT_CONFIG_PATH, config_from_dict  # noqa: E402
 from bo_detector.review_store import data_date_range, normalize_publication_date  # noqa: E402
 from bo_detector.strategy_review import (  # noqa: E402
+    EVIDENCIA_CUMPLE_MINIMO,
+    EVIDENCIA_EN_OBSERVACION,
+    MIN_EVIDENCE_CASES,
     PeriodData,
     apply_proposal,
     compare_configs,
@@ -132,7 +135,11 @@ def _terms_markdown(period: PeriodData, rows: list[dict]) -> str:
     refs = period.reference_counts()
     with_matches = [row for row in rows if row["coincidencias"]]
     candidates = sorted(
-        (row for row in with_matches if row["candidato_revision"]),
+        (row for row in with_matches if row["estado_evidencia"] == EVIDENCIA_CUMPLE_MINIMO),
+        key=lambda row: (-row["evaluables"], row["valor"]),
+    )
+    observation = sorted(
+        (row for row in with_matches if row["estado_evidencia"] == EVIDENCIA_EN_OBSERVACION),
         key=lambda row: (-row["evaluables"], row["valor"]),
     )
     with_relevant = sorted(
@@ -158,13 +165,25 @@ def _terms_markdown(period: PeriodData, rows: list[dict]) -> str:
         "**Decide** = la norma deja de estar en la lista principal si se retira el término; "
         "**sigue** = la norma seguiría seleccionada por otra regla.",
         "",
+        f"Criterio de evidencia mínima (docs/seguimiento/criterio_evidencia_keywords.md): proponer retirar o "
+        f"restringir un término sólo con al menos {MIN_EVIDENCE_CASES} casos evaluados y ninguno relevante. "
+        "**Tasa máx. (3/n)** = con 0 relevantes en n casos evaluados, la tasa real de relevantes no supera 3/n "
+        "con 95 % de confianza. Los términos estacionales requieren además un ciclo anual completo.",
+        "",
         "## Candidatos a revisión",
         "",
-        "Términos cuyas coincidencias evaluables resultaron todas no relevantes. Es una señal para revisar, "
-        "no una orden de retiro: comparar la cantidad de casos antes de decidir.",
+        f"Cumplen el mínimo de evidencia: {MIN_EVIDENCE_CASES} o más casos evaluados y ninguno relevante. "
+        "Es una señal para revisar, no una orden de retiro.",
         "",
     ]
     lines += _terms_table(candidates) if candidates else ["Ninguno en el período.", ""]
+    lines += [
+        "## En observación",
+        "",
+        f"Ningún caso relevante, pero menos de {MIN_EVIDENCE_CASES} casos evaluados: no proponer su retiro todavía.",
+        "",
+    ]
+    lines += _terms_table(observation) if observation else ["Ninguno en el período.", ""]
     lines += ["## Términos con relevantes confirmadas", ""]
     lines += _terms_table(with_relevant) if with_relevant else ["Ninguno en el período.", ""]
     lines += ["## Términos con coincidencias sin base de evaluación", ""]
@@ -178,8 +197,8 @@ def _terms_markdown(period: PeriodData, rows: list[dict]) -> str:
 
 def _terms_table(rows: list[dict]) -> list[str]:
     lines = [
-        "| Término | Lista | Coinc. | Relev. | No rel. (decisión) | No rel. (lectura) | Sin inf. | % no relevante (base) | Decide / sigue | Ejemplos |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| Término | Lista | Coinc. | Relev. | No rel. (decisión) | No rel. (lectura) | Sin inf. | % no relevante (base) | Tasa máx. (3/n) | Evidencia | Decide / sigue | Ejemplos |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for row in rows:
         percent = row["porcentaje_no_relevante"]
@@ -191,7 +210,8 @@ def _terms_table(rows: list[dict]) -> list[str]:
         lines.append(
             f"| {_md(value)} | {row['lista']} | {row['coincidencias']} | {row['relevantes']} | "
             f"{row['no_relevantes_decision']} | {row['no_relevantes_lectura']} | {row['sin_informacion']} | "
-            f"{percent_text} | {row['decide_seleccion']} / {row['sigue_por_otra_regla']} | {_md(examples)} |"
+            f"{percent_text} | {_percent(row['tasa_maxima_relevantes']) if row['tasa_maxima_relevantes'] is not None else '—'} | "
+            f"{row['estado_evidencia']} | {row['decide_seleccion']} / {row['sigue_por_otra_regla']} | {_md(examples)} |"
         )
     lines.append("")
     return lines

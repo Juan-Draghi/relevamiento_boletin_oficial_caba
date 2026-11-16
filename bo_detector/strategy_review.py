@@ -73,6 +73,31 @@ EDITABLE_LISTS = (
 OPERATIONS = ("agregar", "eliminar", "reemplazar")
 MAX_EXAMPLES = 5
 
+# Criterio de evidencia minima (docs/seguimiento/criterio_evidencia_keywords.md):
+# proponer retirar o restringir un termino solo con al menos 30 casos evaluados
+# y ninguno relevante. Con 0 relevantes en n casos, la tasa real de relevantes
+# no supera 3/n con 95 % de confianza ("regla de tres").
+MIN_EVIDENCE_CASES = 30
+EVIDENCIA_CUMPLE_MINIMO = "Cumple el mínimo"
+EVIDENCIA_EN_OBSERVACION = "En observación"
+EVIDENCIA_APORTA_RELEVANTES = "Aporta relevantes"
+EVIDENCIA_SIN_BASE = "Sin base"
+
+
+def evidence_status(relevant: int, evaluable: int) -> tuple[str, float | None]:
+    """Estado de evidencia de un termino y tasa maxima de relevantes (3/n) en porcentaje.
+
+    La tasa maxima solo corresponde cuando hay casos evaluados y ninguno relevante.
+    """
+    if not evaluable:
+        return EVIDENCIA_SIN_BASE, None
+    if relevant:
+        return EVIDENCIA_APORTA_RELEVANTES, None
+    max_rate = round(min(3 / evaluable, 1.0) * 100, 1)
+    if evaluable >= MIN_EVIDENCE_CASES:
+        return EVIDENCIA_CUMPLE_MINIMO, max_rate
+    return EVIDENCIA_EN_OBSERVACION, max_rate
+
 
 @dataclass
 class StoredNorm:
@@ -265,6 +290,8 @@ def term_report(period: PeriodData, config: DetectorConfig) -> list[dict[str, An
                     "decide_seleccion": decisive,
                     "sigue_por_otra_regla": len(matched) - decisive,
                     "candidato_revision": bool(evaluable) and irrelevant == evaluable,
+                    "estado_evidencia": evidence_status(counts[REF_RELEVANTE], evaluable)[0],
+                    "tasa_maxima_relevantes": evidence_status(counts[REF_RELEVANTE], evaluable)[1],
                     "ejemplos": [norm.example() for norm in matched[:MAX_EXAMPLES]],
                 }
             )

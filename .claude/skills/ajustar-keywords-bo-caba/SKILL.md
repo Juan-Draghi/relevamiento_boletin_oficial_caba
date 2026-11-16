@@ -55,12 +55,13 @@ Usar cuando el usuario pide revisar el desempeño de los términos en un períod
 
 2. Leer el informe Markdown generado en `data/informes_estrategias/`. Presentar:
    - período, boletines y normas, con el reparto de la referencia profesional (relevantes, no relevantes por decisión, no relevantes según la lectura completa, sin información);
-   - candidatos a revisión con su cantidad de casos y ejemplos: un 100 % no relevante es una señal para revisar, no una orden de retiro; 2 de 2 no equivale a 150 de 150;
+   - candidatos a revisión (columna «Evidencia» = «Cumple el mínimo») con su cantidad de casos, tasa máxima 3/n y ejemplos: es una señal para revisar, no una orden de retiro;
+   - términos «En observación» (0 relevantes con menos de 30 casos evaluados);
    - términos que aportaron relevantes;
    - términos con coincidencias pero sin base de evaluación: no asignarles 0 % ni 100 %.
-3. Aplicar el criterio de evidencia mínima (sección 3 de la referencia y `docs/seguimiento/criterio_evidencia_keywords.md`):
-   - proponer retirar o restringir un término sólo con **al menos 30 casos evaluados y ninguno relevante**; informar n y la tasa máxima de relevantes 3/n;
-   - con menos de 30 casos evaluados, informar el término como «en observación» y no proponer su retiro;
+3. Aplicar el criterio de evidencia mínima (sección 3 de la referencia y `docs/seguimiento/criterio_evidencia_keywords.md`). El informe ya calcula la columna «Tasa máx. (3/n)» y el estado de evidencia de cada término:
+   - proponer retirar o restringir un término sólo con **al menos 30 casos evaluados y ninguno relevante**; informar n y la tasa máxima de relevantes 3/n tomadas del informe;
+   - con menos de 30 casos evaluados, presentar el término como «en observación» y no proponer su retiro;
    - no proponer el retiro de términos ligados a normas estacionales o anuales sin un ciclo anual completo de registros;
    - para términos amplios con muchas alertas irrelevantes, evaluar primero convertirlos en condicionales o reemplazarlos por una frase más específica;
    - no evaluar la precisión de los términos que aportan relevantes mientras haya pocas relevantes confirmadas en el período.
