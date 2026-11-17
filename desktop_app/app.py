@@ -85,7 +85,7 @@ def create_analysis_job(
         ANALYSIS_JOBS[job_id] = {
             "id": job_id,
             "status": "queued",
-            "message": "Preparando consulta a la API...",
+            "message": "Preparando la consulta al Boletín Oficial...",
             "progress_percent": 2,
             "selected_parametro": parametro,
             "results": [],
@@ -108,16 +108,16 @@ def run_analysis_job(
     include_descartadas: bool,
 ) -> None:
     try:
-        set_job_state(job_id, status="running", message="Cargando configuracion...", progress_percent=8)
+        set_job_state(job_id, status="running", message="Cargando la configuración del detector...", progress_percent=8)
         config = load_config()
 
-        set_job_state(job_id, message="Consultando Boletin Oficial CABA...", progress_percent=18)
+        set_job_state(job_id, message="Consultando el Boletín Oficial CABA...", progress_percent=18)
         payload = BoletinAPIClient().obtener_boletin(parametro=parametro, carga_datos=True)
 
-        set_job_state(job_id, message="Aplanando estructura de normas...", progress_percent=45)
+        set_job_state(job_id, message="Organizando las normas del ejemplar...", progress_percent=45)
         records = flatten_normas_payload(payload)
 
-        set_job_state(job_id, message="Aplicando reglas de deteccion...", progress_percent=65)
+        set_job_state(job_id, message="Aplicando las reglas de detección...", progress_percent=65)
         classified_all = classify_records(
             records,
             config=config,
@@ -137,7 +137,7 @@ def run_analysis_job(
         summary = build_summary(payload, records, category_counts)
 
         summary["total_normas"] = len(classified_all)
-        set_job_state(job_id, message="Guardando registro semanal...", progress_percent=85)
+        set_job_state(job_id, message="Guardando el registro semanal...", progress_percent=85)
         review_state = upsert_analysis(REVIEW_DATA_DIR, summary, classified_all)
         summary.update(
             {
@@ -172,7 +172,7 @@ def run_analysis_job(
         set_job_state(
             job_id,
             status="error",
-            message=f"Error: {exc}",
+            message=f"No se pudo completar el análisis: {exc} Revisá la conexión y volvé a intentar.",
             progress_percent=100,
         )
 
@@ -211,8 +211,8 @@ def build_completion_message(category_counts: Counter[str]) -> str:
     relevantes = category_counts.get(RELEVANTE, 0)
     revision = category_counts.get(REVISION_MANUAL, 0)
     if relevantes or revision:
-        return f"Analisis finalizado: {relevantes} relevantes y {revision} para revision manual."
-    return "Analisis finalizado: no se detecto normativa relevante."
+        return f"Análisis finalizado: {relevantes} relevantes y {revision} para revisión manual."
+    return "Análisis finalizado: no se detectó normativa relevante."
 
 
 def format_result(item: dict[str, Any]) -> dict[str, Any]:
@@ -234,7 +234,7 @@ def format_result(item: dict[str, Any]) -> dict[str, Any]:
         "organismo": item.get("organismo") or "",
         "sumario": item.get("sumario") or "",
         "motivo_deteccion": item.get("motivo_deteccion") or [],
-        "motivo_label": " | ".join(item.get("motivo_deteccion") or []),
+        "motivo_label": motivo_label(item.get("motivo_deteccion") or []),
         "url_norma": item.get("url_norma") or "",
         "numero_boletin": item.get("numero_boletin") or "",
         "fecha_publicacion": item.get("fecha_publicacion") or "",
@@ -249,10 +249,35 @@ def format_result(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# Textos de interfaz para los motivos de deteccion. El registro guarda los
+# codigos originales; aqui solo se traducen para mostrarlos.
+MOTIVO_LABELS = {
+    "keyword_sumario": "Palabra clave",
+    "keyword_condicional_sumario": "Palabra clave con acción normativa",
+    "referencia_norma_curada": "Norma en seguimiento",
+    "organismo_prioritario": "Organismo prioritario",
+    "sumario_opaco_patron": "Sumario sin objeto claro",
+}
+
+
+def motivo_label(motivos: list[str]) -> str:
+    labels = []
+    for motivo in motivos:
+        code, separator, value = str(motivo).partition(": ")
+        label = MOTIVO_LABELS.get(code)
+        if label is None:
+            labels.append(str(motivo))
+        elif separator:
+            labels.append(f"{label}: {value}")
+        else:
+            labels.append(label)
+    return " · ".join(labels)
+
+
 def category_label(categoria: str) -> str:
     labels = {
         RELEVANTE: "Relevante",
-        REVISION_MANUAL: "Revision manual",
+        REVISION_MANUAL: "Revisión manual",
         NO_RELEVANTE: "No relevante",
         DESCARTADA_FILTRO_ESTRUCTURAL: "Descartada por filtro estructural",
     }
@@ -310,7 +335,7 @@ def api_analyze_status(job_id: str):
         job = ANALYSIS_JOBS.get(job_id)
 
     if not job:
-        return jsonify({"status": "error", "message": "Analisis no encontrado."}), 404
+        return jsonify({"status": "error", "message": "No se encontró el análisis. Volvé a iniciarlo."}), 404
 
     return jsonify(job)
 
@@ -345,7 +370,7 @@ def api_indicators():
     try:
         if start_text or end_text:
             if not (start_text and end_text):
-                raise ValueError("Indique fecha inicial y fecha final del periodo.")
+                raise ValueError("Indicá la fecha inicial y la fecha final del período.")
             return jsonify(
                 calculate_period_indicators(
                     REVIEW_DATA_DIR,

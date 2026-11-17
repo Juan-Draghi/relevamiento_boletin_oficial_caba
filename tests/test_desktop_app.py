@@ -20,6 +20,39 @@ class DesktopAppTests(unittest.TestCase):
         self.data_dir_patcher.stop()
         self.temporary_directory.cleanup()
 
+    def test_index_uses_cpau_interface_kit_offline(self):
+        response = self.client.get("/")
+        html = response.get_data(as_text=True)
+        static_dir = Path(desktop_module.__file__).parent / "static"
+
+        self.assertIn("cpau-app.css", html)
+        self.assertLess(html.index("cpau-app.css"), html.index("styles.css"))
+        self.assertIn('class="app-barra"', html)
+        self.assertIn("logo-biblioteca-cpau.png", html)
+        self.assertIn('class="app-pie"', html)
+        self.assertTrue((static_dir / "cpau-app.css").exists())
+        self.assertTrue((static_dir / "logo-biblioteca-cpau.png").exists())
+        # Sin recursos remotos: la app debe funcionar sin conexion.
+        styles = (static_dir / "styles.css").read_text(encoding="utf-8")
+        self.assertNotIn("http", html.split("<body")[0])
+        self.assertNotIn("box-shadow", styles)
+
+    def test_detection_reasons_are_shown_in_plain_language(self):
+        label = desktop_module.motivo_label(
+            [
+                "keyword_condicional_sumario: espacio público",
+                "sumario_opaco_patron",
+                "organismo_prioritario: SECGDU",
+                "codigo_desconocido: x",
+            ]
+        )
+
+        self.assertEqual(
+            label,
+            "Palabra clave con acción normativa: espacio público · Sumario sin objeto claro"
+            " · Organismo prioritario: SECGDU · codigo_desconocido: x",
+        )
+
     def test_index_has_review_and_indicator_tabs_without_config_editor(self):
         response = self.client.get("/")
         html = response.get_data(as_text=True)

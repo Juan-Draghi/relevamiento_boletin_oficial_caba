@@ -207,6 +207,14 @@ Scripts de uso:
 - `stop_desktop.bat`: cierra la app.
 - `crear_acceso_directo_escritorio.bat`: crea acceso directo en el Escritorio.
 
+Interfaz:
+
+- La interfaz usa el kit CPAU de la skill `cpau-estilo` (marca Biblioteca CPAU): `desktop_app/static/cpau-app.css` es una copia del kit y no se edita; los componentes propios de la app van en `styles.css`, que se carga despues y usa las variables del kit.
+- Respetar la estetica plana (sin sombras ni degradados, esquinas de 2 px), Roboto, y el azul solo para la accion principal, la seleccion, los enlaces y los indicadores. Los estados siempre llevan texto, no solo color.
+- Textos de interfaz en voseo, botones con verbo en infinitivo y sin terminos tecnicos internos. Los motivos de deteccion se muestran traducidos (`motivo_label` en `desktop_app/app.py`); el registro guarda los codigos originales.
+- Verificar los cambios de interfaz a 1366 px y 390 px de ancho, sin desplazamiento horizontal ni errores de consola.
+- El icono de la app (pestana y acceso directo) es el escudo de la Ciudad (`app-icon-ciudad.ico`).
+
 La app corre en:
 
 ```text

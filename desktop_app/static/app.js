@@ -61,7 +61,8 @@ function escapeHtml(value) {
 function setMessage(text, kind = "info") {
   messageText.textContent = text;
   messageBox.hidden = false;
-  messageBox.className = `message message--${kind}`;
+  const kitKind = {success: "ok", error: "error", info: "info"}[kind] || "info";
+  messageBox.className = `aviso aviso--${kitKind}`;
 }
 
 function getSelectedParametroMode() {
@@ -92,13 +93,13 @@ function resolveParametro() {
   }
   if (mode === "date") {
     if (!parametroDate.value) {
-      throw new Error("Seleccione una fecha para consultar un boletín retrospectivo.");
+      throw new Error("Elegí una fecha para consultar un boletín anterior.");
     }
     return formatApiDate(parametroDate.value);
   }
   const value = parametroAdvanced.value.trim();
   if (!value) {
-    throw new Error("Ingrese un número de boletín o parámetro admitido por la API.");
+    throw new Error("Escribí un número de boletín o una fecha en formato dd-mm-aaaa.");
   }
   return value;
 }
@@ -223,7 +224,7 @@ function resultRow(result, hiddenCategory = false) {
           <span>Evidencia breve obligatoria</span>
           <textarea data-review-observation rows="2">${escapeHtml(result.observacion_revision || "")}</textarea>
         </label>` : ""}
-        <button type="button" class="button-secondary save-review">Guardar decisión</button>
+        <button type="button" class="btn btn--secundario btn--chico save-review">Guardar decisión</button>
         <small class="save-status" aria-live="polite"></small>
       </div>
     </article>
@@ -284,7 +285,7 @@ async function saveNormReview(button) {
 
   status.classList.remove("save-status--error");
   if (evidenceField && decision === "RELEVANTE_CONFIRMADA" && !observation) {
-    status.textContent = "Ingrese una evidencia breve antes de guardar.";
+    status.textContent = "Escribí una evidencia breve antes de guardar.";
     status.classList.add("save-status--error");
     return;
   }

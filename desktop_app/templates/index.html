@@ -3,21 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Biblioteca CPAU | Relevamiento Boletín Oficial CABA</title>
+  <title>Relevamiento Boletín Oficial CABA · Biblioteca CPAU</title>
   <link rel="icon" href="{{ url_for('static', filename='app-icon-ciudad.ico') }}" type="image/x-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='cpau-app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header">
-      <a class="brand" href="/" aria-label="Biblioteca CPAU">
-        <span class="brand-mark">BO</span>
-        <span>Biblioteca CPAU</span>
-      </a>
-      <div class="app-badge">Aplicación local</div>
+  <div class="app">
+    <header class="app-barra">
+      <a href="/"><img class="app-barra__logo" src="{{ url_for('static', filename='logo-biblioteca-cpau.png') }}" alt="Biblioteca CPAU"></a>
+      <div class="app-barra__nombre">Relevamiento Boletín Oficial CABA<small>Aplicación local</small></div>
     </header>
 
-    <nav class="app-tabs" role="tablist" aria-label="Secciones de la aplicación">
+    <nav class="app-pestanas" role="tablist" aria-label="Secciones de la aplicación">
       <button type="button" class="app-tabs__button app-tabs__button--active" data-tab-target="review" role="tab" aria-selected="true">
         Relevamiento
       </button>
@@ -26,18 +24,19 @@
       </button>
     </nav>
 
-    <main>
-      <section class="message message--{{ message_kind }}" id="message-box" {% if not message %}hidden{% endif %}>
+    <div class="app-cuerpo">
+    <main class="app-principal">
+      <section class="aviso aviso--{{ 'error' if message_kind == 'error' else 'info' }}" id="message-box" role="status" {% if not message %}hidden{% endif %}>
         <span id="message-text">{{ message }}</span>
       </section>
 
       <div data-tab-panel="review">
         <section class="review-workspace">
           <div class="intro">
-            <p class="section-kicker">Relevamiento BO CABA</p>
-            <h1>Revisión diaria de normativa</h1>
-            <p>
-              Analice un ejemplar, revise las alertas automáticas y registre cada
+            <p class="antetitulo">Relevamiento BO CABA</p>
+            <h1 class="titulo-pagina">Revisión diaria de normativa</h1>
+            <p class="descripcion">
+              Analizá un ejemplar, revisá las alertas automáticas y registrá cada
               decisión profesional sin perder la clasificación original.
             </p>
           </div>
@@ -64,7 +63,7 @@
                   </label>
                   <label class="radio-field">
                     <input type="radio" name="parametro_mode" value="advanced">
-                    <span>Parámetro avanzado</span>
+                    <span>Número de boletín</span>
                   </label>
                 </div>
 
@@ -76,10 +75,10 @@
                       class="query-field query-field--advanced"
                       type="text"
                       placeholder="Ejemplo: 7281 o 12-01-2026"
-                      aria-label="Parámetro avanzado"
+                      aria-label="Número de boletín"
                     >
                   </div>
-                  <button type="submit" id="analysis-submit">Analizar boletín</button>
+                  <button type="submit" class="btn" id="analysis-submit">Analizar boletín</button>
                 </div>
               </fieldset>
             </form>
@@ -91,7 +90,7 @@
             <p class="section-kicker">Progreso</p>
             <strong id="progress-percent">0%</strong>
           </div>
-          <div class="progress-bar"><div class="progress-bar__fill" id="progress-bar-fill"></div></div>
+          <div class="progreso progress-bar"><div class="progreso__barra progress-bar__fill" id="progress-bar-fill"></div></div>
           <p class="progress-panel__message" id="progress-message">Preparando análisis...</p>
         </section>
 
@@ -124,7 +123,7 @@
               <div class="accordion-content">
                 <div class="accordion-tools">
                   <label for="no-relevant-search">Buscar por norma, organismo o sumario</label>
-                  <input id="no-relevant-search" type="search" data-accordion-search="no-relevant-body" placeholder="Buscar dentro de NO_RELEVANTE">
+                  <input id="no-relevant-search" type="search" data-accordion-search="no-relevant-body" placeholder="Buscar entre las normas no relevantes">
                 </div>
                 <div class="review-list review-list--secondary" id="no-relevant-body"></div>
               </div>
@@ -162,16 +161,16 @@
               </div>
             </fieldset>
             <div class="review-save-block">
-              <button type="submit">Guardar control</button>
+              <button type="submit" class="btn">Guardar control</button>
               <span class="save-status" id="bulletin-save-status" aria-live="polite"></span>
             </div>
           </form>
-          <div class="pending-warning" id="pending-warning" role="alert" hidden>
+          <div class="aviso aviso--alerta pending-warning" id="pending-warning" role="alert" hidden>
             <p class="pending-warning__title" id="pending-warning-title"></p>
             <ul class="pending-warning__list" id="pending-warning-list"></ul>
             <div class="pending-warning__actions">
-              <button type="button" class="button-secondary" id="pending-review-again">Volver a revisar</button>
-              <button type="button" class="button-secondary button-secondary--warning" id="pending-save-anyway">Guardar igual como completo</button>
+              <button type="button" class="btn" id="pending-review-again">Volver a revisar</button>
+              <button type="button" class="btn btn--secundario" id="pending-save-anyway">Guardar igual como completo</button>
             </div>
           </div>
         </section>
@@ -180,9 +179,9 @@
       <div data-tab-panel="indicators" hidden>
         <section class="indicators-heading">
           <div class="intro">
-            <p class="section-kicker">Seguimiento operativo</p>
-            <h1>Desempeño del relevamiento</h1>
-            <p>Indicadores calculados a partir de las decisiones profesionales guardadas.</p>
+            <p class="antetitulo">Seguimiento operativo</p>
+            <h1 class="titulo-pagina">Desempeño del relevamiento</h1>
+            <p class="descripcion">Indicadores calculados a partir de las decisiones profesionales guardadas.</p>
           </div>
           <div class="indicator-toolbar">
             <div class="indicator-mode" role="radiogroup" aria-label="Alcance de los indicadores">
@@ -199,17 +198,17 @@
               <label for="indicator-end">Hasta</label>
               <input type="date" id="indicator-end" required>
               <div class="indicator-period-actions">
-                <button type="submit">Consultar</button>
-                <button type="button" class="button-secondary" id="indicator-all-history">Todo el histórico</button>
+                <button type="submit" class="btn">Consultar</button>
+                <button type="button" class="btn btn--secundario" id="indicator-all-history">Todo el histórico</button>
               </div>
             </form>
             <strong id="indicator-period"></strong>
           </div>
         </section>
 
-        <div class="coverage-notice" id="indicator-coverage" role="status" hidden></div>
+        <div class="aviso aviso--alerta coverage-notice" id="indicator-coverage" role="status" hidden></div>
 
-        <div class="consistency-notice" id="indicator-consistency" role="status" hidden></div>
+        <div class="aviso aviso--alerta consistency-notice" id="indicator-consistency" role="status" hidden></div>
 
         <section class="indicator-section indicator-section--performance" aria-labelledby="main-heading">
           <div class="indicator-section__header">
@@ -239,8 +238,8 @@
           <div class="results-header">
             <div><p class="section-kicker">Trazabilidad</p><h2>Boletines computados</h2></div>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="tabla-wrap table-wrap">
+            <table class="tabla">
               <thead><tr><th>Boletín</th><th>Fecha</th><th>Normas procesadas</th><th>Relevantes confirmadas</th><th>Omisiones identificadas</th><th>Control</th></tr></thead>
               <tbody id="indicator-bulletins-body"></tbody>
             </table>
@@ -249,10 +248,11 @@
         </section>
       </div>
     </main>
+    </div>
 
-    <footer class="app-footer">
-      <span>Biblioteca CPAU</span>
-      <span>Herramienta local de relevamiento del Boletín Oficial CABA</span>
+    <footer class="app-pie">
+      <span>Biblioteca CPAU · Relevamiento Boletín Oficial CABA</span>
+      <span>Aplicación local: los datos quedan en este equipo</span>
     </footer>
   </div>
 
